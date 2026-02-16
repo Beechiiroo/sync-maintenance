@@ -4,19 +4,30 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider } from "react-redux";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { store } from "./store";
 import AppLayout from "./components/layout/AppLayout";
-import Dashboard from "./pages/Index";
-import Equipements from "./pages/Equipements";
-import Interventions from "./pages/Interventions";
-import Maintenance from "./pages/Maintenance";
-import Techniciens from "./pages/Techniciens";
-import Stock from "./pages/Stock";
-import Rapports from "./pages/Rapports";
-import ModuleIA from "./pages/ModuleIA";
 import NotFound from "./pages/NotFound";
 
+const Dashboard = lazy(() => import("./pages/Index"));
+const Equipements = lazy(() => import("./pages/Equipements"));
+const Equipements3D = lazy(() => import("./pages/Equipements3D"));
+const Interventions = lazy(() => import("./pages/Interventions"));
+const Maintenance = lazy(() => import("./pages/Maintenance"));
+const Predictive = lazy(() => import("./pages/Predictive"));
+const Techniciens = lazy(() => import("./pages/Techniciens"));
+const Stock = lazy(() => import("./pages/Stock"));
+const PerformanceScoring = lazy(() => import("./pages/PerformanceScoring"));
+const StrategicReporting = lazy(() => import("./pages/StrategicReporting"));
+const ModuleIA = lazy(() => import("./pages/ModuleIA"));
+
 const queryClient = new QueryClient();
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const App = () => (
   <Provider store={store}>
@@ -25,19 +36,24 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/equipements" element={<Equipements />} />
-              <Route path="/interventions" element={<Interventions />} />
-              <Route path="/maintenance" element={<Maintenance />} />
-              <Route path="/techniciens" element={<Techniciens />} />
-              <Route path="/stock" element={<Stock />} />
-              <Route path="/rapports" element={<Rapports />} />
-              <Route path="/ia" element={<ModuleIA />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/equipements" element={<Equipements />} />
+                <Route path="/equipements-3d" element={<Equipements3D />} />
+                <Route path="/interventions" element={<Interventions />} />
+                <Route path="/maintenance" element={<Maintenance />} />
+                <Route path="/predictive" element={<Predictive />} />
+                <Route path="/techniciens" element={<Techniciens />} />
+                <Route path="/stock" element={<Stock />} />
+                <Route path="/scoring" element={<PerformanceScoring />} />
+                <Route path="/rapports" element={<StrategicReporting />} />
+                <Route path="/ia" element={<ModuleIA />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
