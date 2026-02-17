@@ -1,0 +1,65 @@
+{
+  "nav": {
+    "dashboard": "لوحة القيادة",
+    "equipements": "المعدات",
+    "vue3d": "عرض ثلاثي الأبعاد",
+    "interventions": "التدخلات",
+    "maintenance": "الصيانة الوقائية",
+    "predictive": "إنترنت الأشياء التنبؤي",
+    "techniciens": "الفنيون",
+    "stock": "قطع الغيار",
+    "scoring": "نقاط الأداء",
+    "rapports": "التقارير الاستراتيجية",
+    "ia": "وحدة الذكاء الاصطناعي",
+    "gamification": "التلعيب",
+    "operations": "العمليات",
+    "analytics": "التحليلات",
+    "reduce": "طي"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "fullName": "الاسم الكامل",
+    "loginBtn": "دخول",
+    "signupBtn": "تسجيل",
+    "noAccount": "ليس لديك حساب؟",
+    "hasAccount": "لديك حساب بالفعل؟",
+    "welcomeBack": "!مرحبًا بعودتك",
+    "welcomeNew": "!مرحبًا",
+    "subtitle": "منصة إدارة الصيانة الذكية",
+    "forgotPassword": "نسيت كلمة المرور؟"
+  },
+  "dashboard": {
+    "title": "لوحة القيادة",
+    "subtitle": "نظرة عامة على الصيانة",
+    "newIntervention": "+ تدخل جديد",
+    "mttr": "MTTR",
+    "mtbf": "MTBF",
+    "failureRate": "معدل الأعطال",
+    "costs": "تكاليف الصيانة"
+  },
+  "common": {
+    "search": "البحث عن معدات، تدخل...",
+    "admin": "مدير",
+    "maintenanceManager": "مسؤول الصيانة",
+    "notifications": "الإشعارات",
+    "logout": "تسجيل الخروج"
+  },
+  "chatbot": {
+    "title": "مساعد الذكاء الاصطناعي",
+    "placeholder": "اطرح سؤالك حول الصيانة...",
+    "welcome": "مرحبًا! أنا مساعد الصيانة الذكي. كيف يمكنني مساعدتك؟",
+    "thinking": "جاري التفكير..."
+  },
+  "gamification": {
+    "title": "التلعيب",
+    "subtitle": "أداء ومكافآت الفنيين",
+    "points": "النقاط",
+    "badges": "الشارات",
+    "leaderboard": "الترتيب",
+    "level": "المستوى",
+    "rank": "الرتبة"
+  }
+}

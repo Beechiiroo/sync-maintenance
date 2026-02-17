@@ -1,0 +1,65 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "equipements": "Equipment",
+    "vue3d": "3D Factory View",
+    "interventions": "Interventions",
+    "maintenance": "Preventive Maintenance",
+    "predictive": "Predictive IoT",
+    "techniciens": "Technicians",
+    "stock": "Spare Parts",
+    "scoring": "Performance Score",
+    "rapports": "Strategic Reporting",
+    "ia": "AI Module",
+    "gamification": "Gamification",
+    "operations": "Operations",
+    "analytics": "Analytics",
+    "reduce": "Collapse"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full Name",
+    "loginBtn": "Sign In",
+    "signupBtn": "Sign Up",
+    "noAccount": "No account?",
+    "hasAccount": "Already have an account?",
+    "welcomeBack": "Welcome back!",
+    "welcomeNew": "Welcome!",
+    "subtitle": "Intelligent CMMS Platform",
+    "forgotPassword": "Forgot password?"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Maintenance overview",
+    "newIntervention": "+ New Intervention",
+    "mttr": "MTTR",
+    "mtbf": "MTBF",
+    "failureRate": "Failure Rate",
+    "costs": "Maintenance Costs"
+  },
+  "common": {
+    "search": "Search equipment, intervention...",
+    "admin": "Admin",
+    "maintenanceManager": "Maintenance Manager",
+    "notifications": "Notifications",
+    "logout": "Sign Out"
+  },
+  "chatbot": {
+    "title": "AI Assistant",
+    "placeholder": "Ask your maintenance question...",
+    "welcome": "Hello! I'm your intelligent maintenance assistant. How can I help you?",
+    "thinking": "Thinking..."
+  },
+  "gamification": {
+    "title": "Gamification",
+    "subtitle": "Technician performance & rewards",
+    "points": "Points",
+    "badges": "Badges",
+    "leaderboard": "Leaderboard",
+    "level": "Level",
+    "rank": "Rank"
+  }
+}
