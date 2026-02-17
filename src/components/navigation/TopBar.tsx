@@ -2,10 +2,13 @@ import { Moon, Sun, Bell, Search, User } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleTheme } from '@/store/slices/themeSlice';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const TopBar = () => {
   const dispatch = useAppDispatch();
   const theme = useAppSelector((s) => s.theme.mode);
+  const { t } = useTranslation();
 
   return (
     <header className="h-16 border-b border-border bg-card/80 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-30">
@@ -14,7 +17,7 @@ const TopBar = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Rechercher équipement, intervention..."
+            placeholder={t('common.search')}
             className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted/50 border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
         </div>
@@ -38,6 +41,8 @@ const TopBar = () => {
           <Bell className="h-5 w-5" />
           <span className="absolute top-2 right-2 w-2 h-2 rounded-full gradient-accent" />
         </motion.button>
+
+        <LanguageSwitcher />
 
         <div className="w-px h-8 bg-border mx-1" />
 

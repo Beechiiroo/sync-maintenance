@@ -1,0 +1,65 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "equipements": "Équipements",
+    "vue3d": "Vue 3D usine",
+    "interventions": "Interventions",
+    "maintenance": "Maintenance préventive",
+    "predictive": "Prédictive IoT",
+    "techniciens": "Techniciens",
+    "stock": "Stock pièces",
+    "scoring": "Score performance",
+    "rapports": "Reporting stratégique",
+    "ia": "Module IA",
+    "gamification": "Gamification",
+    "operations": "Opérations",
+    "analytics": "Analytics",
+    "reduce": "Réduire"
+  },
+  "auth": {
+    "login": "Connexion",
+    "signup": "Inscription",
+    "email": "Email",
+    "password": "Mot de passe",
+    "fullName": "Nom complet",
+    "loginBtn": "Se connecter",
+    "signupBtn": "S'inscrire",
+    "noAccount": "Pas de compte ?",
+    "hasAccount": "Déjà un compte ?",
+    "welcomeBack": "Bon retour !",
+    "welcomeNew": "Bienvenue !",
+    "subtitle": "Plateforme GMAO intelligente",
+    "forgotPassword": "Mot de passe oublié ?"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Vue d'ensemble de la maintenance",
+    "newIntervention": "+ Nouvelle intervention",
+    "mttr": "MTTR",
+    "mtbf": "MTBF",
+    "failureRate": "Taux de panne",
+    "costs": "Coûts maintenance"
+  },
+  "common": {
+    "search": "Rechercher équipement, intervention...",
+    "admin": "Admin",
+    "maintenanceManager": "Responsable maintenance",
+    "notifications": "Notifications",
+    "logout": "Déconnexion"
+  },
+  "chatbot": {
+    "title": "Assistant IA",
+    "placeholder": "Posez votre question maintenance...",
+    "welcome": "Bonjour ! Je suis votre assistant de maintenance intelligent. Comment puis-je vous aider ?",
+    "thinking": "Réflexion en cours..."
+  },
+  "gamification": {
+    "title": "Gamification",
+    "subtitle": "Performance & récompenses des techniciens",
+    "points": "Points",
+    "badges": "Badges",
+    "leaderboard": "Classement",
+    "level": "Niveau",
+    "rank": "Rang"
+  }
+}

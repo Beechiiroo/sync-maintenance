@@ -8,8 +8,10 @@ import { lazy, Suspense } from "react";
 import { store } from "./store";
 import AppLayout from "./components/layout/AppLayout";
 import NotFound from "./pages/NotFound";
+import ChatBot from "./components/chatbot/ChatBot";
 
 const Dashboard = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
 const Equipements = lazy(() => import("./pages/Equipements"));
 const Equipements3D = lazy(() => import("./pages/Equipements3D"));
 const Interventions = lazy(() => import("./pages/Interventions"));
@@ -20,6 +22,7 @@ const Stock = lazy(() => import("./pages/Stock"));
 const PerformanceScoring = lazy(() => import("./pages/PerformanceScoring"));
 const StrategicReporting = lazy(() => import("./pages/StrategicReporting"));
 const ModuleIA = lazy(() => import("./pages/ModuleIA"));
+const Gamification = lazy(() => import("./pages/Gamification"));
 
 const queryClient = new QueryClient();
 
@@ -38,6 +41,7 @@ const App = () => (
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>
+              <Route path="/auth" element={<Auth />} />
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/equipements" element={<Equipements />} />
@@ -50,9 +54,11 @@ const App = () => (
                 <Route path="/scoring" element={<PerformanceScoring />} />
                 <Route path="/rapports" element={<StrategicReporting />} />
                 <Route path="/ia" element={<ModuleIA />} />
+                <Route path="/gamification" element={<Gamification />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <ChatBot />
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>

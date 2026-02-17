@@ -21,26 +21,31 @@ import SidebarNavItem from './SidebarNavItem';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const navMain = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/equipements', icon: Settings2, label: 'Équipements', badge: 3 },
-  { to: '/equipements-3d', icon: Box, label: 'Vue 3D usine' },
-  { to: '/interventions', icon: Wrench, label: 'Interventions', badge: 7 },
-  { to: '/maintenance', icon: CalendarClock, label: 'Maintenance préventive' },
-  { to: '/predictive', icon: Activity, label: 'Prédictive IoT' },
-  { to: '/techniciens', icon: Users, label: 'Techniciens' },
-  { to: '/stock', icon: Package, label: 'Stock pièces', badge: 2 },
-];
-
-const navAnalytics = [
-  { to: '/scoring', icon: Award, label: 'Score performance' },
-  { to: '/rapports', icon: BarChart3, label: 'Reporting stratégique' },
-  { to: '/ia', icon: BrainCircuit, label: 'Module IA' },
-];
+import { useTranslation } from 'react-i18next';
+import { Gamepad2 } from 'lucide-react';
 
 const AppSidebar = () => {
   const dispatch = useAppDispatch();
   const collapsed = useAppSelector((s) => s.theme.sidebarCollapsed);
+  const { t } = useTranslation();
+
+  const navMain = [
+    { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { to: '/equipements', icon: Settings2, label: t('nav.equipements'), badge: 3 },
+    { to: '/equipements-3d', icon: Box, label: t('nav.vue3d') },
+    { to: '/interventions', icon: Wrench, label: t('nav.interventions'), badge: 7 },
+    { to: '/maintenance', icon: CalendarClock, label: t('nav.maintenance') },
+    { to: '/predictive', icon: Activity, label: t('nav.predictive') },
+    { to: '/techniciens', icon: Users, label: t('nav.techniciens') },
+    { to: '/stock', icon: Package, label: t('nav.stock'), badge: 2 },
+  ];
+
+  const navAnalytics = [
+    { to: '/scoring', icon: Award, label: t('nav.scoring') },
+    { to: '/rapports', icon: BarChart3, label: t('nav.rapports') },
+    { to: '/ia', icon: BrainCircuit, label: t('nav.ia') },
+    { to: '/gamification', icon: Gamepad2, label: t('nav.gamification') },
+  ];
 
   return (
     <motion.aside
@@ -81,7 +86,7 @@ const AppSidebar = () => {
         <AnimatePresence>
           {!collapsed && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted px-3 mb-3">
-              Opérations
+              {t('nav.operations')}
             </motion.p>
           )}
         </AnimatePresence>
@@ -92,7 +97,7 @@ const AppSidebar = () => {
         <AnimatePresence>
           {!collapsed && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted px-3 mb-3">
-              Analytics
+              {t('nav.analytics')}
             </motion.p>
           )}
         </AnimatePresence>
@@ -116,7 +121,7 @@ const AppSidebar = () => {
                 exit={{ opacity: 0 }}
                 className="text-xs font-medium"
               >
-                Réduire
+                {t('nav.reduce')}
               </motion.span>
             )}
           </AnimatePresence>
