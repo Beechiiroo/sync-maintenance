@@ -23,6 +23,7 @@ const PerformanceScoring = lazy(() => import("./pages/PerformanceScoring"));
 const StrategicReporting = lazy(() => import("./pages/StrategicReporting"));
 const ModuleIA = lazy(() => import("./pages/ModuleIA"));
 const Gamification = lazy(() => import("./pages/Gamification"));
+const Profile = lazy(() => import("./pages/Profile"));
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/rapports" element={<StrategicReporting />} />
                 <Route path="/ia" element={<ModuleIA />} />
                 <Route path="/gamification" element={<Gamification />} />
+                <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
