@@ -4,11 +4,22 @@ import { toggleTheme } from '@/store/slices/themeSlice';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const TopBar = () => {
   const dispatch = useAppDispatch();
   const theme = useAppSelector((s) => s.theme.mode);
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [userEmail, setUserEmail] = useState<string>('Admin');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setUserEmail(data.user.email.split('@')[0]);
+    });
+  }, []);
 
   return (
     <header className="h-16 border-b border-border bg-card/80 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-30">
@@ -46,18 +57,24 @@ const TopBar = () => {
 
         <div className="w-px h-8 bg-border mx-1" />
 
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/profile')}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+        >
           <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
             <User className="h-4 w-4 text-primary-foreground" />
           </div>
           <div className="text-left hidden md:block">
-            <p className="text-sm font-medium text-foreground">Admin</p>
+            <p className="text-sm font-medium text-foreground capitalize">{userEmail}</p>
             <p className="text-[11px] text-muted-foreground">Responsable maintenance</p>
           </div>
-        </button>
+        </motion.button>
       </div>
     </header>
   );
 };
 
 export default TopBar;
+
