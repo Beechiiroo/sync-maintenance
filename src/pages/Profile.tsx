@@ -29,6 +29,16 @@ const FAKE_SESSIONS: Session[] = [
 
 const AVATARS = ['👷', '🧑‍🔧', '👨‍💼', '🧑‍💻', '👩‍🔧', '🤖', '⚙️', '🔬'];
 
+// Auto-assign avatar based on email hash
+function getAutoAvatar(email: string): string {
+  let hash = 0;
+  for (let i = 0; i < email.length; i++) {
+    hash = ((hash << 5) - hash) + email.charCodeAt(i);
+    hash |= 0;
+  }
+  return AVATARS[Math.abs(hash) % AVATARS.length];
+}
+
 export default function Profile() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,6 +60,10 @@ export default function Profile() {
       if (data.user) {
         setUser(data.user);
         setDisplayName(data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Opérateur');
+        // Auto-assign avatar based on email
+        if (data.user.email) {
+          setAvatar(getAutoAvatar(data.user.email));
+        }
       }
     });
   }, []);

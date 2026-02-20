@@ -1,4 +1,4 @@
-import { Moon, Sun, Bell, Search, User } from 'lucide-react';
+import { Moon, Sun, Bell, Search } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleTheme } from '@/store/slices/themeSlice';
 import { motion } from 'framer-motion';
@@ -8,16 +8,31 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+const AVATARS = ['👷', '🧑‍🔧', '👨‍💼', '🧑‍💻', '👩‍🔧', '🤖', '⚙️', '🔬'];
+
+function getAutoAvatar(email: string): string {
+  let hash = 0;
+  for (let i = 0; i < email.length; i++) {
+    hash = ((hash << 5) - hash) + email.charCodeAt(i);
+    hash |= 0;
+  }
+  return AVATARS[Math.abs(hash) % AVATARS.length];
+}
+
 const TopBar = () => {
   const dispatch = useAppDispatch();
   const theme = useAppSelector((s) => s.theme.mode);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string>('Admin');
+  const [userAvatar, setUserAvatar] = useState<string>('👷');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setUserEmail(data.user.email.split('@')[0]);
+      if (data.user?.email) {
+        setUserEmail(data.user.email.split('@')[0]);
+        setUserAvatar(getAutoAvatar(data.user.email));
+      }
     });
   }, []);
 
@@ -63,8 +78,8 @@ const TopBar = () => {
           onClick={() => navigate('/profile')}
           className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
         >
-          <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
-            <User className="h-4 w-4 text-primary-foreground" />
+          <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-lg">
+            {userAvatar}
           </div>
           <div className="text-left hidden md:block">
             <p className="text-sm font-medium text-foreground capitalize">{userEmail}</p>
