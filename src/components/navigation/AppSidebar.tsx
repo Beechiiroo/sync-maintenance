@@ -13,7 +13,9 @@ import {
   Activity,
   Box,
   BarChart3,
-  Award
+  Award,
+  Leaf,
+  Gamepad2
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
@@ -22,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useTranslation } from 'react-i18next';
-import { Gamepad2 } from 'lucide-react';
+
 
 const AppSidebar = () => {
   const dispatch = useAppDispatch();
@@ -45,6 +47,7 @@ const AppSidebar = () => {
     { to: '/rapports', icon: BarChart3, label: t('nav.rapports') },
     { to: '/ia', icon: BrainCircuit, label: t('nav.ia') },
     { to: '/gamification', icon: Gamepad2, label: t('nav.gamification') },
+    { to: '/eco', icon: Leaf, label: 'Éco-Maintenance' },
   ];
 
   return (

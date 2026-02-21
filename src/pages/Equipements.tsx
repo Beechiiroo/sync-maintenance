@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity } from 'lucide-react';
+import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import StatusBadge from '@/components/common/StatusBadge';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +44,12 @@ const Equipements = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedEq, setSelectedEq] = useState<Equipment | null>(null);
+  const [qrEquipment, setQrEquipment] = useState<Equipment | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanResult, setScanResult] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scanIntervalRef = useRef<number | null>(null);
   const [form, setForm] = useState({ name: '', category: categories[0], location: locations[0], status: 'operational' as EquipmentStatus, manufacturer: '', serialNumber: '' });
 
   const filtered = equipments.filter((eq) => {
@@ -78,6 +85,37 @@ const Equipements = () => {
     setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '' });
   };
 
+  const downloadQR = (eq: Equipment) => {
+    const svg = document.getElementById(`qr-${eq.id}`);
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 256;
+    const ctx2 = canvas.getContext('2d')!;
+    const img = new Image();
+    img.onload = () => { ctx2.fillStyle = '#fff'; ctx2.fillRect(0, 0, 256, 256); ctx2.drawImage(img, 0, 0); const a = document.createElement('a'); a.download = `QR-${eq.id}.png`; a.href = canvas.toDataURL('image/png'); a.click(); };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  // Simple QR scanner using camera
+  const startScanner = useCallback(async () => {
+    setShowScanner(true);
+    setScanResult(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); }
+    } catch { setScanResult('Caméra non disponible'); }
+  }, []);
+
+  const stopScanner = useCallback(() => {
+    if (videoRef.current?.srcObject) {
+      (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
+      videoRef.current.srcObject = null;
+    }
+    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+    setShowScanner(false);
+  }, []);
+
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
@@ -85,9 +123,14 @@ const Equipements = () => {
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Équipements</h1>
           <p className="text-sm text-muted-foreground">{equipments.length} équipements enregistrés</p>
         </div>
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowAddModal(true)} className="px-4 py-2.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Ajouter
-        </motion.button>
+        <div className="flex items-center gap-2">
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={startScanner} className="px-3 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors">
+            <Camera className="h-4 w-4" /> Scanner QR
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowAddModal(true)} className="px-4 py-2.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Ajouter
+          </motion.button>
+        </div>
       </motion.div>
 
       {/* Status Stats */}
@@ -172,7 +215,7 @@ const Equipements = () => {
                   <td className="px-5 py-4 text-sm text-muted-foreground">{eq.nextMaintenance}</td>
                   <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
-                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors" title="QR Code"><QrCode className="h-4 w-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setQrEquipment(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors" title="QR Code"><QrCode className="h-4 w-4" /></button>
                       <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
                     </div>
                   </td>
@@ -294,6 +337,59 @@ const Equipements = () => {
                   <Wrench className="h-3.5 w-3.5" /> Créer OT
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {qrEquipment && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setQrEquipment(null)}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }} className="glass-card-strong w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-foreground">QR Code — {qrEquipment.id}</h2>
+                <button onClick={() => setQrEquipment(null)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+              </div>
+              <div className="flex justify-center p-6 bg-white rounded-xl mb-4">
+                <QRCodeSVG id={`qr-${qrEquipment.id}`} value={`GMAO-EQ:${qrEquipment.id}|${qrEquipment.name}|${qrEquipment.serialNumber || 'N/A'}`} size={200} level="H" includeMargin={false} />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">{qrEquipment.name}</p>
+              <p className="text-xs text-muted-foreground font-mono mb-1">{qrEquipment.id} · {qrEquipment.serialNumber || 'N/A'}</p>
+              <p className="text-xs text-muted-foreground mb-4">{qrEquipment.location} · {qrEquipment.category}</p>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => downloadQR(qrEquipment)}
+                className="w-full h-10 rounded-lg gradient-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2">
+                <Download className="h-4 w-4" /> Télécharger PNG
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Scanner Modal */}
+      <AnimatePresence>
+        {showScanner && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={stopScanner}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }} className="glass-card-strong w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-foreground flex items-center gap-2"><Camera className="h-5 w-5 text-primary" /> Scanner QR Code</h2>
+                <button onClick={stopScanner} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+              </div>
+              <div className="relative rounded-xl overflow-hidden bg-black aspect-square mb-4">
+                <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
+                <canvas ref={canvasRef} className="hidden" />
+                <div className="absolute inset-0 border-2 border-primary/50 rounded-xl pointer-events-none" />
+                <div className="absolute top-1/2 left-1/4 right-1/4 h-0.5 bg-primary/60 animate-pulse" style={{ boxShadow: '0 0 12px hsl(var(--primary))' }} />
+              </div>
+              {scanResult ? (
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Résultat :</p>
+                  <p className="text-sm font-mono text-foreground">{scanResult}</p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">Pointez la caméra vers un QR code d'équipement</p>
+              )}
+              <p className="text-[10px] text-muted-foreground text-center mt-3">💡 Scannez le QR code imprimé sur la plaque de l'équipement pour accéder à sa fiche technique.</p>
             </motion.div>
           </motion.div>
         )}
