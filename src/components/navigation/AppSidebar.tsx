@@ -57,6 +57,16 @@ const AppSidebar = () => {
     { to: '/eco', icon: Leaf, label: 'Éco-Maintenance' },
   ];
 
+  const navInnovation = [
+    { to: '/ai-agents', icon: Bot, label: t('nav.aiAgents') },
+    { to: '/recommendations', icon: Sparkles, label: t('nav.recommendations') },
+    { to: '/tech-passport', icon: UserCircle2, label: t('nav.techPassport') },
+    { to: '/war-room', icon: Siren, label: t('nav.warRoom') },
+    { to: '/timeline', icon: Clock, label: t('nav.timeline') },
+    { to: '/vision', icon: Eye, label: t('nav.vision') },
+    { to: '/executive', icon: Crown, label: t('nav.executive') },
+  ];
+
   return (
     <motion.aside
       initial={false}
