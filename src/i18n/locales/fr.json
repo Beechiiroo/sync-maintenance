@@ -14,6 +14,14 @@
     "gamification": "Gamification",
     "operations": "Opérations",
     "analytics": "Analytics",
+    "innovation": "Innovation IA",
+    "aiAgents": "Agents IA",
+    "recommendations": "Recommandations",
+    "techPassport": "Passeport Tech",
+    "warRoom": "Salle de Crise",
+    "timeline": "Chronologie",
+    "vision": "Vision IA",
+    "executive": "Assistant Exécutif",
     "reduce": "Réduire"
   },
   "auth": {
