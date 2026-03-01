@@ -15,7 +15,14 @@ import {
   BarChart3,
   Award,
   Leaf,
-  Gamepad2
+  Gamepad2,
+  Bot,
+  Sparkles,
+  UserCircle2,
+  Siren,
+  Clock,
+  Eye,
+  Crown
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
