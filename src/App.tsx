@@ -25,6 +25,13 @@ const ModuleIA = lazy(() => import("./pages/ModuleIA"));
 const Gamification = lazy(() => import("./pages/Gamification"));
 const Profile = lazy(() => import("./pages/Profile"));
 const EcoMaintenance = lazy(() => import("./pages/EcoMaintenance"));
+const AIAgents = lazy(() => import("./pages/AIAgents"));
+const Recommendations = lazy(() => import("./pages/Recommendations"));
+const TechPassport = lazy(() => import("./pages/TechPassport"));
+const WarRoom = lazy(() => import("./pages/WarRoom"));
+const MaintenanceTimeline = lazy(() => import("./pages/MaintenanceTimeline"));
+const VisionCenter = lazy(() => import("./pages/VisionCenter"));
+const ExecutiveAI = lazy(() => import("./pages/ExecutiveAI"));
 
 const queryClient = new QueryClient();
 
@@ -59,6 +66,13 @@ const App = () => (
                 <Route path="/gamification" element={<Gamification />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/eco" element={<EcoMaintenance />} />
+                <Route path="/ai-agents" element={<AIAgents />} />
+                <Route path="/recommendations" element={<Recommendations />} />
+                <Route path="/tech-passport" element={<TechPassport />} />
+                <Route path="/war-room" element={<WarRoom />} />
+                <Route path="/timeline" element={<MaintenanceTimeline />} />
+                <Route path="/vision" element={<VisionCenter />} />
+                <Route path="/executive" element={<ExecutiveAI />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

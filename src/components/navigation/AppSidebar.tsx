@@ -15,7 +15,14 @@ import {
   BarChart3,
   Award,
   Leaf,
-  Gamepad2
+  Gamepad2,
+  Bot,
+  Sparkles,
+  UserCircle2,
+  Siren,
+  Clock,
+  Eye,
+  Crown
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
@@ -48,6 +55,16 @@ const AppSidebar = () => {
     { to: '/ia', icon: BrainCircuit, label: t('nav.ia') },
     { to: '/gamification', icon: Gamepad2, label: t('nav.gamification') },
     { to: '/eco', icon: Leaf, label: 'Éco-Maintenance' },
+  ];
+
+  const navInnovation = [
+    { to: '/ai-agents', icon: Bot, label: t('nav.aiAgents') },
+    { to: '/recommendations', icon: Sparkles, label: t('nav.recommendations') },
+    { to: '/tech-passport', icon: UserCircle2, label: t('nav.techPassport') },
+    { to: '/war-room', icon: Siren, label: t('nav.warRoom') },
+    { to: '/timeline', icon: Clock, label: t('nav.timeline') },
+    { to: '/vision', icon: Eye, label: t('nav.vision') },
+    { to: '/executive', icon: Crown, label: t('nav.executive') },
   ];
 
   return (
@@ -105,6 +122,17 @@ const AppSidebar = () => {
           )}
         </AnimatePresence>
         {navAnalytics.map((item) => (
+          <SidebarNavItem key={item.to} {...item} collapsed={collapsed} />
+        ))}
+        <div className="my-3" />
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted px-3 mb-3">
+              {t('nav.innovation')}
+            </motion.p>
+          )}
+        </AnimatePresence>
+        {navInnovation.map((item) => (
           <SidebarNavItem key={item.to} {...item} collapsed={collapsed} />
         ))}
       </nav>
