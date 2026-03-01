@@ -25,6 +25,13 @@ const ModuleIA = lazy(() => import("./pages/ModuleIA"));
 const Gamification = lazy(() => import("./pages/Gamification"));
 const Profile = lazy(() => import("./pages/Profile"));
 const EcoMaintenance = lazy(() => import("./pages/EcoMaintenance"));
+const AIAgents = lazy(() => import("./pages/AIAgents"));
+const Recommendations = lazy(() => import("./pages/Recommendations"));
+const TechPassport = lazy(() => import("./pages/TechPassport"));
+const WarRoom = lazy(() => import("./pages/WarRoom"));
+const MaintenanceTimeline = lazy(() => import("./pages/MaintenanceTimeline"));
+const VisionCenter = lazy(() => import("./pages/VisionCenter"));
+const ExecutiveAI = lazy(() => import("./pages/ExecutiveAI"));
 
 const queryClient = new QueryClient();
 
