@@ -66,6 +66,13 @@ const App = () => (
                 <Route path="/gamification" element={<Gamification />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/eco" element={<EcoMaintenance />} />
+                <Route path="/ai-agents" element={<AIAgents />} />
+                <Route path="/recommendations" element={<Recommendations />} />
+                <Route path="/tech-passport" element={<TechPassport />} />
+                <Route path="/war-room" element={<WarRoom />} />
+                <Route path="/timeline" element={<MaintenanceTimeline />} />
+                <Route path="/vision" element={<VisionCenter />} />
+                <Route path="/executive" element={<ExecutiveAI />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

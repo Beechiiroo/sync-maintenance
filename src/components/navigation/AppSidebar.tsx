@@ -124,6 +124,17 @@ const AppSidebar = () => {
         {navAnalytics.map((item) => (
           <SidebarNavItem key={item.to} {...item} collapsed={collapsed} />
         ))}
+        <div className="my-3" />
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted px-3 mb-3">
+              {t('nav.innovation')}
+            </motion.p>
+          )}
+        </AnimatePresence>
+        {navInnovation.map((item) => (
+          <SidebarNavItem key={item.to} {...item} collapsed={collapsed} />
+        ))}
       </nav>
 
       {/* Collapse toggle */}
