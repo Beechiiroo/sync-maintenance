@@ -32,6 +32,10 @@ const WarRoom = lazy(() => import("./pages/WarRoom"));
 const MaintenanceTimeline = lazy(() => import("./pages/MaintenanceTimeline"));
 const VisionCenter = lazy(() => import("./pages/VisionCenter"));
 const ExecutiveAI = lazy(() => import("./pages/ExecutiveAI"));
+const Investigation = lazy(() => import("./pages/Investigation"));
+const Training = lazy(() => import("./pages/Training"));
+const Compliance = lazy(() => import("./pages/Compliance"));
+const Knowledge = lazy(() => import("./pages/Knowledge"));
 
 const queryClient = new QueryClient();
 
