@@ -22,7 +22,11 @@ import {
   Siren,
   Clock,
   Eye,
-  Crown
+  Crown,
+  Search,
+  BookOpen,
+  Shield,
+  FileText
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
@@ -65,6 +69,10 @@ const AppSidebar = () => {
     { to: '/timeline', icon: Clock, label: t('nav.timeline') },
     { to: '/vision', icon: Eye, label: t('nav.vision') },
     { to: '/executive', icon: Crown, label: t('nav.executive') },
+    { to: '/investigation', icon: Search, label: t('nav.investigation') },
+    { to: '/training', icon: BookOpen, label: t('nav.training') },
+    { to: '/compliance', icon: Shield, label: t('nav.compliance') },
+    { to: '/knowledge', icon: FileText, label: t('nav.knowledge') },
   ];
 
   return (

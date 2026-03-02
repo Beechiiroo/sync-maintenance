@@ -9,6 +9,7 @@ import { store } from "./store";
 import AppLayout from "./components/layout/AppLayout";
 import NotFound from "./pages/NotFound";
 import ChatBot from "./components/chatbot/ChatBot";
+import CommandPalette from "./components/command-palette/CommandPalette";
 
 const Dashboard = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -32,6 +33,10 @@ const WarRoom = lazy(() => import("./pages/WarRoom"));
 const MaintenanceTimeline = lazy(() => import("./pages/MaintenanceTimeline"));
 const VisionCenter = lazy(() => import("./pages/VisionCenter"));
 const ExecutiveAI = lazy(() => import("./pages/ExecutiveAI"));
+const Investigation = lazy(() => import("./pages/Investigation"));
+const Training = lazy(() => import("./pages/Training"));
+const Compliance = lazy(() => import("./pages/Compliance"));
+const Knowledge = lazy(() => import("./pages/Knowledge"));
 
 const queryClient = new QueryClient();
 
@@ -73,10 +78,15 @@ const App = () => (
                 <Route path="/timeline" element={<MaintenanceTimeline />} />
                 <Route path="/vision" element={<VisionCenter />} />
                 <Route path="/executive" element={<ExecutiveAI />} />
+                <Route path="/investigation" element={<Investigation />} />
+                <Route path="/training" element={<Training />} />
+                <Route path="/compliance" element={<Compliance />} />
+                <Route path="/knowledge" element={<Knowledge />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
             <ChatBot />
+            <CommandPalette />
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>
