@@ -77,6 +77,10 @@ const App = () => (
                 <Route path="/timeline" element={<MaintenanceTimeline />} />
                 <Route path="/vision" element={<VisionCenter />} />
                 <Route path="/executive" element={<ExecutiveAI />} />
+                <Route path="/investigation" element={<Investigation />} />
+                <Route path="/training" element={<Training />} />
+                <Route path="/compliance" element={<Compliance />} />
+                <Route path="/knowledge" element={<Knowledge />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
