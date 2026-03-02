@@ -22,7 +22,11 @@ import {
   Siren,
   Clock,
   Eye,
-  Crown
+  Crown,
+  Search,
+  BookOpen,
+  Shield,
+  FileText
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
