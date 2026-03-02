@@ -22,6 +22,10 @@
     "timeline": "Timeline",
     "vision": "AI Vision",
     "executive": "Executive AI",
+    "investigation": "AI Investigation",
+    "training": "Training",
+    "compliance": "Compliance & Audit",
+    "knowledge": "Knowledge Hub",
     "reduce": "Collapse"
   },
   "auth": {

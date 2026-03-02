@@ -22,6 +22,10 @@
     "timeline": "Chronologie",
     "vision": "Vision IA",
     "executive": "Assistant Exécutif",
+    "investigation": "Investigation IA",
+    "training": "Formation",
+    "compliance": "Conformité & Audit",
+    "knowledge": "Base de Connaissances",
     "reduce": "Réduire"
   },
   "auth": {
