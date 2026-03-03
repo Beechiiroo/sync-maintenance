@@ -26,16 +26,24 @@ import {
   Search,
   BookOpen,
   Shield,
-  FileText
+  FileText,
+  Recycle,
+  Building2,
+  GitBranch,
+  Zap,
+  ShoppingCart,
+  HardHat,
+  Map,
+  GraduationCap,
+  FlaskConical,
+  FileBarChart
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
 import SidebarNavItem from './SidebarNavItem';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-
 import { useTranslation } from 'react-i18next';
-
 
 const AppSidebar = () => {
   const dispatch = useAppDispatch();
@@ -75,6 +83,26 @@ const AppSidebar = () => {
     { to: '/knowledge', icon: FileText, label: t('nav.knowledge') },
   ];
 
+  const navStrategic = [
+    { to: '/asset-lifecycle', icon: Recycle, label: t('nav.assetLifecycle') },
+    { to: '/multi-site', icon: Building2, label: t('nav.multiSite') },
+    { to: '/workflow-builder', icon: GitBranch, label: t('nav.workflowBuilder') },
+    { to: '/failure-patterns', icon: Zap, label: t('nav.failurePatterns') },
+    { to: '/spare-forecasting', icon: ShoppingCart, label: t('nav.spareForecasting') },
+    { to: '/safety-risk', icon: HardHat, label: t('nav.safetyRisk') },
+    { to: '/plant-layout', icon: Map, label: t('nav.plantLayout') },
+    { to: '/skill-matrix', icon: GraduationCap, label: t('nav.skillMatrix') },
+    { to: '/experiment-sim', icon: FlaskConical, label: t('nav.experimentSim') },
+    { to: '/ai-reports', icon: FileBarChart, label: t('nav.aiReports') },
+  ];
+
+  const sections = [
+    { key: 'operations', label: t('nav.operations'), items: navMain },
+    { key: 'analytics', label: t('nav.analytics'), items: navAnalytics },
+    { key: 'innovation', label: t('nav.innovation'), items: navInnovation },
+    { key: 'strategic', label: t('nav.strategic'), items: navStrategic },
+  ];
+
   return (
     <motion.aside
       initial={false}
@@ -92,18 +120,9 @@ const AppSidebar = () => {
         </div>
         <AnimatePresence>
           {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="overflow-hidden"
-            >
-              <h1 className="text-base font-bold text-sidebar-primary-foreground tracking-tight">
-                MaintenIQ
-              </h1>
-              <p className="text-[10px] text-sidebar-muted font-medium uppercase tracking-widest">
-                GMAO Pro
-              </p>
+            <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="overflow-hidden">
+              <h1 className="text-base font-bold text-sidebar-primary-foreground tracking-tight">MaintenIQ</h1>
+              <p className="text-[10px] text-sidebar-muted font-medium uppercase tracking-widest">GMAO Pro</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -111,37 +130,20 @@ const AppSidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted px-3 mb-3">
-              {t('nav.operations')}
-            </motion.p>
-          )}
-        </AnimatePresence>
-        {navMain.map((item) => (
-          <SidebarNavItem key={item.to} {...item} collapsed={collapsed} />
-        ))}
-        <div className="my-3" />
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted px-3 mb-3">
-              {t('nav.analytics')}
-            </motion.p>
-          )}
-        </AnimatePresence>
-        {navAnalytics.map((item) => (
-          <SidebarNavItem key={item.to} {...item} collapsed={collapsed} />
-        ))}
-        <div className="my-3" />
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted px-3 mb-3">
-              {t('nav.innovation')}
-            </motion.p>
-          )}
-        </AnimatePresence>
-        {navInnovation.map((item) => (
-          <SidebarNavItem key={item.to} {...item} collapsed={collapsed} />
+        {sections.map((section, si) => (
+          <div key={section.key}>
+            {si > 0 && <div className="my-3" />}
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted px-3 mb-3">
+                  {section.label}
+                </motion.p>
+              )}
+            </AnimatePresence>
+            {section.items.map((item) => (
+              <SidebarNavItem key={item.to} {...item} collapsed={collapsed} />
+            ))}
+          </div>
         ))}
       </nav>
 
@@ -154,12 +156,7 @@ const AppSidebar = () => {
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           <AnimatePresence>
             {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-xs font-medium"
-              >
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-xs font-medium">
                 {t('nav.reduce')}
               </motion.span>
             )}
