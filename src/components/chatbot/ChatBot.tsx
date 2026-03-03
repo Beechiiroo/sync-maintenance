@@ -1,9 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Bot, User, Minimize2 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Minimize2, Mic, MicOff, Volume2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
-import { supabase } from '@/integrations/supabase/client';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -23,11 +22,56 @@ const ChatBot = () => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  // Speech recognition setup
+  const startListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'fr-FR';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results).map((r: any) => r[0].transcript).join('');
+      setInput(transcript);
+      if (event.results[0].isFinal) {
+        setListening(false);
+        sendMessage(transcript);
+      }
+    };
+
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  }, []);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setListening(false);
+  }, []);
+
+  // Text-to-speech for assistant responses
+  const speak = useCallback((text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const cleaned = text.replace(/[#*_`\[\]()]/g, '').slice(0, 500);
+    const utterance = new SpeechSynthesisUtterance(cleaned);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 1.1;
+    window.speechSynthesis.speak(utterance);
+  }, []);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -49,9 +93,7 @@ const ChatBot = () => {
         body: JSON.stringify({ messages: allMessages }),
       });
 
-      if (!resp.ok || !resp.body) {
-        throw new Error('Stream failed');
-      }
+      if (!resp.ok || !resp.body) throw new Error('Stream failed');
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -128,7 +170,7 @@ const ChatBot = () => {
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">{t('chatbot.title')}</p>
-              <p className="text-[10px] text-success">● En ligne</p>
+              <p className="text-[10px] text-green-500">● En ligne</p>
             </div>
           </div>
           <div className="flex gap-1">
@@ -159,6 +201,10 @@ const ChatBot = () => {
                     {msg.role === 'assistant' ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:m-0 [&_ul]:m-0 [&_ol]:m-0">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        {/* TTS button */}
+                        <button onClick={() => speak(msg.content)} className="mt-1 opacity-50 hover:opacity-100 transition-opacity" title="Écouter">
+                          <Volume2 className="h-3 w-3" />
+                        </button>
                       </div>
                     ) : msg.content}
                   </div>
@@ -201,6 +247,15 @@ const ChatBot = () => {
                   className="flex-1 h-9 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   disabled={loading}
                 />
+                {/* Voice button */}
+                <motion.button
+                  type="button"
+                  onClick={listening ? stopListening : startListening}
+                  whileTap={{ scale: 0.9 }}
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-colors ${listening ? 'bg-destructive/10 border-destructive text-destructive animate-pulse' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                >
+                  {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </motion.button>
                 <motion.button
                   type="submit"
                   disabled={!input.trim() || loading}

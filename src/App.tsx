@@ -37,6 +37,17 @@ const Investigation = lazy(() => import("./pages/Investigation"));
 const Training = lazy(() => import("./pages/Training"));
 const Compliance = lazy(() => import("./pages/Compliance"));
 const Knowledge = lazy(() => import("./pages/Knowledge"));
+// New strategic modules
+const AssetLifecycle = lazy(() => import("./pages/AssetLifecycle"));
+const MultiSite = lazy(() => import("./pages/MultiSite"));
+const WorkflowBuilder = lazy(() => import("./pages/WorkflowBuilder"));
+const FailurePatterns = lazy(() => import("./pages/FailurePatterns"));
+const SpareForecasting = lazy(() => import("./pages/SpareForecasting"));
+const SafetyRisk = lazy(() => import("./pages/SafetyRisk"));
+const PlantLayout = lazy(() => import("./pages/PlantLayout"));
+const SkillMatrix = lazy(() => import("./pages/SkillMatrix"));
+const ExperimentSimulator = lazy(() => import("./pages/ExperimentSimulator"));
+const AIReports = lazy(() => import("./pages/AIReports"));
 
 const queryClient = new QueryClient();
 
@@ -82,6 +93,17 @@ const App = () => (
                 <Route path="/training" element={<Training />} />
                 <Route path="/compliance" element={<Compliance />} />
                 <Route path="/knowledge" element={<Knowledge />} />
+                {/* Strategic modules */}
+                <Route path="/asset-lifecycle" element={<AssetLifecycle />} />
+                <Route path="/multi-site" element={<MultiSite />} />
+                <Route path="/workflow-builder" element={<WorkflowBuilder />} />
+                <Route path="/failure-patterns" element={<FailurePatterns />} />
+                <Route path="/spare-forecasting" element={<SpareForecasting />} />
+                <Route path="/safety-risk" element={<SafetyRisk />} />
+                <Route path="/plant-layout" element={<PlantLayout />} />
+                <Route path="/skill-matrix" element={<SkillMatrix />} />
+                <Route path="/experiment-sim" element={<ExperimentSimulator />} />
+                <Route path="/ai-reports" element={<AIReports />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
