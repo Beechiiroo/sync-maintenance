@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Star, Wrench, Clock, TrendingUp, Medal, Phone, Mail, ChevronRight, Filter } from 'lucide-react';
+import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { cn } from '@/lib/utils';
 
 type TechRole = 'Technicien Senior' | 'Technicien' | 'Technicien Junior' | 'Responsable maintenance';
@@ -19,15 +20,16 @@ interface Technician {
   phone: string;
   experience: string;
   certifications: string[];
+  photoUrl?: string;
 }
 
 const technicians: Technician[] = [
-  { id: 1, name: 'Mohamed Bennani', role: 'Technicien Senior', speciality: 'Mécanique', tasks: 12, completed: 10, rating: 4.8, avatar: 'MB', status: 'en_intervention', phone: '+212 6 12 34 56', experience: '8 ans', certifications: ['ISO 9001', 'ATEX'] },
-  { id: 2, name: 'Karim Lahlou', role: 'Technicien', speciality: 'Électrique', tasks: 8, completed: 7, rating: 4.5, avatar: 'KL', status: 'disponible', phone: '+212 6 23 45 67', experience: '5 ans', certifications: ['Habilitation B2V'] },
+  { id: 1, name: 'Mohamed Bennani', role: 'Technicien Senior', speciality: 'Mécanique', tasks: 12, completed: 10, rating: 4.8, avatar: 'MB', status: 'en_intervention', phone: '+212 6 12 34 56', experience: '8 ans', certifications: ['ISO 9001', 'ATEX'], photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face' },
+  { id: 2, name: 'Karim Lahlou', role: 'Technicien', speciality: 'Électrique', tasks: 8, completed: 7, rating: 4.5, avatar: 'KL', status: 'disponible', phone: '+212 6 23 45 67', experience: '5 ans', certifications: ['Habilitation B2V'], photoUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face' },
   { id: 3, name: 'Amine Tazi', role: 'Technicien', speciality: 'Hydraulique', tasks: 10, completed: 9, rating: 4.7, avatar: 'AT', status: 'disponible', phone: '+212 6 34 56 78', experience: '6 ans', certifications: ['ISO 9001'] },
-  { id: 4, name: 'Youssef Mourad', role: 'Technicien Senior', speciality: 'Automatisme', tasks: 15, completed: 14, rating: 4.9, avatar: 'YM', status: 'en_intervention', phone: '+212 6 45 67 89', experience: '10 ans', certifications: ['SIEMENS PLC', 'ISO 9001', 'ATEX'] },
+  { id: 4, name: 'Youssef Mourad', role: 'Technicien Senior', speciality: 'Automatisme', tasks: 15, completed: 14, rating: 4.9, avatar: 'YM', status: 'en_intervention', phone: '+212 6 45 67 89', experience: '10 ans', certifications: ['SIEMENS PLC', 'ISO 9001', 'ATEX'], photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face' },
   { id: 5, name: 'Rachid Korbi', role: 'Technicien Junior', speciality: 'Mécanique', tasks: 6, completed: 5, rating: 4.2, avatar: 'RK', status: 'disponible', phone: '+212 6 56 78 90', experience: '2 ans', certifications: [] },
-  { id: 6, name: 'Sara Elhami', role: 'Responsable maintenance', speciality: 'Management', tasks: 20, completed: 18, rating: 4.9, avatar: 'SE', status: 'disponible', phone: '+212 6 67 89 01', experience: '12 ans', certifications: ['MBA', 'PMP', 'ISO 9001'] },
+  { id: 6, name: 'Sara Elhami', role: 'Responsable maintenance', speciality: 'Management', tasks: 20, completed: 18, rating: 4.9, avatar: 'SE', status: 'disponible', phone: '+212 6 67 89 01', experience: '12 ans', certifications: ['MBA', 'PMP', 'ISO 9001'], photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face' },
 ];
 
 const statusConfig: Record<TechStatus, { label: string; color: string; bg: string; dot: string }> = {
@@ -46,6 +48,7 @@ const roleColors: Record<TechRole, string> = {
 const Techniciens = () => {
   const [selected, setSelected] = useState<Technician | null>(null);
   const [filterStatus, setFilterStatus] = useState<TechStatus | 'all'>('all');
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
 
   const filtered = filterStatus === 'all' ? technicians : technicians.filter(t => t.status === filterStatus);
 
@@ -54,6 +57,23 @@ const Techniciens = () => {
     disponible: technicians.filter(t => t.status === 'disponible').length,
     en_intervention: technicians.filter(t => t.status === 'en_intervention').length,
     avgRating: (technicians.reduce((a, t) => a + t.rating, 0) / technicians.length).toFixed(1),
+  };
+
+  const TechAvatar = ({ tech, size = 'md' }: { tech: Technician; size?: 'sm' | 'md' | 'lg' }) => {
+    const sizeClasses = { sm: 'w-10 h-10 text-xs', md: 'w-12 h-12 text-sm', lg: 'w-16 h-16 text-xl' };
+    const roundedClasses = { sm: 'rounded-lg', md: 'rounded-xl', lg: 'rounded-2xl' };
+    return (
+      <div
+        className={cn(sizeClasses[size], roundedClasses[size], "overflow-hidden flex items-center justify-center shrink-0 cursor-pointer", tech.photoUrl ? '' : 'gradient-primary text-primary-foreground font-bold')}
+        onClick={(e) => { e.stopPropagation(); if (tech.photoUrl) setPreviewImage({ src: tech.photoUrl, alt: tech.name }); }}
+      >
+        {tech.photoUrl ? (
+          <img src={tech.photoUrl} alt={tech.name} className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          tech.avatar
+        )}
+      </div>
+    );
   };
 
   return (
@@ -109,9 +129,7 @@ const Techniciens = () => {
               >
                 <div className="flex items-start gap-4 mb-4">
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                      {tech.avatar}
-                    </div>
+                    <TechAvatar tech={tech} />
                     <span className={cn("absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card", sc.dot)} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -125,7 +143,6 @@ const Techniciens = () => {
                   <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                 </div>
 
-                {/* Skill specialty */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-muted-foreground">{tech.speciality}</span>
@@ -166,9 +183,7 @@ const Techniciens = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }} className="glass-card-strong w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-4 mb-5">
-                <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-                  {selected.avatar}
-                </div>
+                <TechAvatar tech={selected} size="lg" />
                 <div>
                   <h2 className="text-base font-bold text-foreground">{selected.name}</h2>
                   <p className="text-xs text-muted-foreground">{selected.role}</p>
@@ -209,6 +224,11 @@ const Techniciens = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Image Preview */}
+      {previewImage && (
+        <ImagePreviewModal src={previewImage.src} alt={previewImage.alt} open={!!previewImage} onClose={() => setPreviewImage(null)} />
+      )}
     </div>
   );
 };
