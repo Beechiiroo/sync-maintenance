@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download } from 'lucide-react';
+import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download, ImageIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import StatusBadge from '@/components/common/StatusBadge';
+import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 type EquipmentStatus = 'operational' | 'maintenance' | 'critical' | 'warning';
 
@@ -19,17 +21,20 @@ interface Equipment {
   healthScore: number;
   serialNumber?: string;
   manufacturer?: string;
+  imageUrl?: string;
 }
 
+const PLACEHOLDER_IMG = '/placeholder.svg';
+
 const initialEquipments: Equipment[] = [
-  { id: 'EQ-001', name: 'Compresseur Atlas CP-200', category: 'Pneumatique', location: 'Atelier A', status: 'operational', lastMaintenance: '12/06/2026', nextMaintenance: '12/07/2026', mtbf: '240h', healthScore: 72, serialNumber: 'ATL-20-2024', manufacturer: 'Atlas Copco' },
-  { id: 'EQ-002', name: 'Pompe hydraulique PH-15', category: 'Hydraulique', location: 'Atelier B', status: 'maintenance', lastMaintenance: '01/07/2026', nextMaintenance: '15/07/2026', mtbf: '180h', healthScore: 55, serialNumber: 'PH-15-2023', manufacturer: 'Bosch Rexroth' },
-  { id: 'EQ-003', name: 'Tour CNC TC-500', category: 'Usinage', location: 'Atelier C', status: 'operational', lastMaintenance: '20/06/2026', nextMaintenance: '20/07/2026', mtbf: '320h', healthScore: 91, serialNumber: 'TC-500-2022', manufacturer: 'Mazak' },
+  { id: 'EQ-001', name: 'Compresseur Atlas CP-200', category: 'Pneumatique', location: 'Atelier A', status: 'operational', lastMaintenance: '12/06/2026', nextMaintenance: '12/07/2026', mtbf: '240h', healthScore: 72, serialNumber: 'ATL-20-2024', manufacturer: 'Atlas Copco', imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&h=200&fit=crop' },
+  { id: 'EQ-002', name: 'Pompe hydraulique PH-15', category: 'Hydraulique', location: 'Atelier B', status: 'maintenance', lastMaintenance: '01/07/2026', nextMaintenance: '15/07/2026', mtbf: '180h', healthScore: 55, serialNumber: 'PH-15-2023', manufacturer: 'Bosch Rexroth', imageUrl: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=200&h=200&fit=crop' },
+  { id: 'EQ-003', name: 'Tour CNC TC-500', category: 'Usinage', location: 'Atelier C', status: 'operational', lastMaintenance: '20/06/2026', nextMaintenance: '20/07/2026', mtbf: '320h', healthScore: 91, serialNumber: 'TC-500-2022', manufacturer: 'Mazak', imageUrl: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=200&h=200&fit=crop' },
   { id: 'EQ-004', name: 'Convoyeur à bande C-300', category: 'Manutention', location: 'Zone de stockage', status: 'critical', lastMaintenance: '05/07/2026', nextMaintenance: '-', mtbf: '95h', healthScore: 28, serialNumber: 'CB-300-2021', manufacturer: 'Daifuku' },
-  { id: 'EQ-005', name: 'Chaudière industrielle CH-01', category: 'Thermique', location: 'Salle énergie', status: 'operational', lastMaintenance: '28/06/2026', nextMaintenance: '28/07/2026', mtbf: '400h', healthScore: 88, serialNumber: 'CH-01-2020', manufacturer: 'Viessmann' },
+  { id: 'EQ-005', name: 'Chaudière industrielle CH-01', category: 'Thermique', location: 'Salle énergie', status: 'operational', lastMaintenance: '28/06/2026', nextMaintenance: '28/07/2026', mtbf: '400h', healthScore: 88, serialNumber: 'CH-01-2020', manufacturer: 'Viessmann', imageUrl: 'https://images.unsplash.com/photo-1513828583688-c52646db42da?w=200&h=200&fit=crop' },
   { id: 'EQ-006', name: 'Robot soudeur RS-50', category: 'Robotique', location: 'Atelier D', status: 'warning', lastMaintenance: '10/07/2026', nextMaintenance: '12/07/2026', mtbf: '150h', healthScore: 35, serialNumber: 'RS-50-2023', manufacturer: 'KUKA' },
   { id: 'EQ-007', name: 'Fraiseuse FM-120', category: 'Usinage', location: 'Atelier C', status: 'operational', lastMaintenance: '15/06/2026', nextMaintenance: '15/07/2026', mtbf: '280h', healthScore: 83, serialNumber: 'FM-120-2022', manufacturer: 'Hurco' },
-  { id: 'EQ-008', name: 'Groupe électrogène GE-500', category: 'Énergie', location: 'Salle énergie', status: 'operational', lastMaintenance: '01/07/2026', nextMaintenance: '01/08/2026', mtbf: '500h', healthScore: 95, serialNumber: 'GE-500-2019', manufacturer: 'Caterpillar' },
+  { id: 'EQ-008', name: 'Groupe électrogène GE-500', category: 'Énergie', location: 'Salle énergie', status: 'operational', lastMaintenance: '01/07/2026', nextMaintenance: '01/08/2026', mtbf: '500h', healthScore: 95, serialNumber: 'GE-500-2019', manufacturer: 'Caterpillar', imageUrl: 'https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?w=200&h=200&fit=crop' },
 ];
 
 const categories = ['Pneumatique', 'Hydraulique', 'Usinage', 'Manutention', 'Thermique', 'Robotique', 'Énergie'];
@@ -39,6 +44,7 @@ const healthColor = (score: number) => score >= 80 ? 'text-success' : score >= 5
 const healthBg = (score: number) => score >= 80 ? 'bg-success' : score >= 50 ? 'bg-warning' : 'bg-destructive';
 
 const Equipements = () => {
+  const { toast } = useToast();
   const [equipments, setEquipments] = useState(initialEquipments);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -47,10 +53,13 @@ const Equipements = () => {
   const [qrEquipment, setQrEquipment] = useState<Equipment | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanIntervalRef = useRef<number | null>(null);
-  const [form, setForm] = useState({ name: '', category: categories[0], location: locations[0], status: 'operational' as EquipmentStatus, manufacturer: '', serialNumber: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState({ name: '', category: categories[0], location: locations[0], status: 'operational' as EquipmentStatus, manufacturer: '', serialNumber: '', imageUrl: '' });
 
   const filtered = equipments.filter((eq) => {
     const matchSearch = eq.name.toLowerCase().includes(search.toLowerCase()) || eq.id.toLowerCase().includes(search.toLowerCase());
@@ -66,23 +75,31 @@ const Equipements = () => {
   };
 
   const handleAdd = () => {
-    if (!form.name) return;
+    if (!form.name.trim()) {
+      toast({ title: 'Erreur', description: 'Le nom de l\'équipement est requis.', variant: 'destructive' });
+      return;
+    }
+    setSubmitting(true);
     const newId = `EQ-${String(equipments.length + 1).padStart(3, '0')}`;
-    setEquipments(prev => [...prev, {
-      id: newId,
-      name: form.name,
-      category: form.category,
-      location: form.location,
-      status: form.status,
-      lastMaintenance: new Date().toLocaleDateString('fr-FR'),
-      nextMaintenance: '-',
-      mtbf: '-',
-      healthScore: form.status === 'operational' ? 90 : form.status === 'warning' ? 55 : form.status === 'critical' ? 25 : 45,
-      serialNumber: form.serialNumber,
-      manufacturer: form.manufacturer,
-    }]);
-    setShowAddModal(false);
-    setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '' });
+    setTimeout(() => {
+      setEquipments(prev => [...prev, {
+        id: newId, name: form.name, category: form.category, location: form.location, status: form.status,
+        lastMaintenance: new Date().toLocaleDateString('fr-FR'), nextMaintenance: '-', mtbf: '-',
+        healthScore: form.status === 'operational' ? 90 : form.status === 'warning' ? 55 : form.status === 'critical' ? 25 : 45,
+        serialNumber: form.serialNumber, manufacturer: form.manufacturer, imageUrl: form.imageUrl || undefined,
+      }]);
+      setShowAddModal(false);
+      setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '', imageUrl: '' });
+      setSubmitting(false);
+      toast({ title: 'Équipement ajouté', description: `${form.name} a été ajouté avec succès.` });
+    }, 400);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setForm(p => ({ ...p, imageUrl: url }));
   };
 
   const downloadQR = (eq: Equipment) => {
@@ -97,7 +114,6 @@ const Equipements = () => {
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
-  // Simple QR scanner using camera
   const startScanner = useCallback(async () => {
     setShowScanner(true);
     setScanResult(null);
@@ -136,17 +152,14 @@ const Equipements = () => {
       {/* Status Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'En service', value: statusStats.operational, color: 'text-success', bg: 'bg-success/10', icon: CheckCircle2 },
-          { label: 'Maintenance', value: statusStats.maintenance, color: 'text-info', bg: 'bg-info/10', icon: Wrench },
-          { label: 'Attention', value: statusStats.warning, color: 'text-warning', bg: 'bg-warning/10', icon: AlertTriangle },
-          { label: 'En panne', value: statusStats.critical, color: 'text-destructive', bg: 'bg-destructive/10', icon: Activity },
+          { label: 'En service', value: statusStats.operational, color: 'text-success', bg: 'bg-success/10', icon: CheckCircle2, key: 'operational' },
+          { label: 'Maintenance', value: statusStats.maintenance, color: 'text-info', bg: 'bg-info/10', icon: Wrench, key: 'maintenance' },
+          { label: 'Attention', value: statusStats.warning, color: 'text-warning', bg: 'bg-warning/10', icon: AlertTriangle, key: 'warning' },
+          { label: 'En panne', value: statusStats.critical, color: 'text-destructive', bg: 'bg-destructive/10', icon: Activity, key: 'critical' },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className={cn("rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:ring-1 transition-all", s.bg, filterStatus === (s.label === 'En service' ? 'operational' : s.label === 'Maintenance' ? 'maintenance' : s.label === 'Attention' ? 'warning' : 'critical') ? 'ring-2 ring-primary' : 'ring-transparent')}
-            onClick={() => setFilterStatus(prev => {
-              const sv = s.label === 'En service' ? 'operational' : s.label === 'Maintenance' ? 'maintenance' : s.label === 'Attention' ? 'warning' : 'critical';
-              return prev === sv ? 'all' : sv;
-            })}
+            className={cn("rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:ring-1 transition-all", s.bg, filterStatus === s.key ? 'ring-2 ring-primary' : 'ring-transparent')}
+            onClick={() => setFilterStatus(prev => prev === s.key ? 'all' : s.key)}
           >
             <s.icon className={cn("h-5 w-5 shrink-0", s.color)} />
             <div>
@@ -168,63 +181,81 @@ const Equipements = () => {
         </button>
       </div>
 
+      {/* Empty state */}
+      {filtered.length === 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-12 text-center">
+          <Settings2 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Aucun équipement trouvé</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Modifiez vos filtres ou ajoutez un nouvel équipement</p>
+        </motion.div>
+      )}
+
       {/* Table */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                {['Équipement', 'Catégorie', 'Localisation', 'Santé', 'Statut', 'MTBF', 'Prochaine maint.', ''].map(h => (
-                  <th key={h} className="text-left text-xs font-semibold text-muted-foreground px-5 py-3">{h}</th>
+      {filtered.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  {['Équipement', 'Catégorie', 'Localisation', 'Santé', 'Statut', 'MTBF', 'Prochaine maint.', ''].map(h => (
+                    <th key={h} className="text-left text-xs font-semibold text-muted-foreground px-5 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((eq, i) => (
+                  <motion.tr
+                    key={eq.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + i * 0.04 }}
+                    className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                    onClick={() => setSelectedEq(eq)}
+                  >
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-10 h-10 rounded-lg overflow-hidden bg-primary/10 flex items-center justify-center shrink-0 cursor-pointer"
+                          onClick={(e) => { e.stopPropagation(); if (eq.imageUrl) setPreviewImage({ src: eq.imageUrl, alt: eq.name }); }}
+                        >
+                          {eq.imageUrl ? (
+                            <img src={eq.imageUrl} alt={eq.name} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <Settings2 className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{eq.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{eq.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{eq.category}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{eq.location}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className={cn("h-full rounded-full", healthBg(eq.healthScore))} style={{ width: `${eq.healthScore}%` }} />
+                        </div>
+                        <span className={cn("text-xs font-bold", healthColor(eq.healthScore))}>{eq.healthScore}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4"><StatusBadge status={eq.status} /></td>
+                    <td className="px-5 py-4 text-sm font-mono text-foreground">{eq.mtbf}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{eq.nextMaintenance}</td>
+                    <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); setQrEquipment(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors" title="QR Code"><QrCode className="h-4 w-4" /></button>
+                        <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
+                      </div>
+                    </td>
+                  </motion.tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((eq, i) => (
-                <motion.tr
-                  key={eq.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + i * 0.04 }}
-                  className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
-                  onClick={() => setSelectedEq(eq)}
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Settings2 className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{eq.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{eq.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">{eq.category}</td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">{eq.location}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full", healthBg(eq.healthScore))} style={{ width: `${eq.healthScore}%` }} />
-                      </div>
-                      <span className={cn("text-xs font-bold", healthColor(eq.healthScore))}>{eq.healthScore}%</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4"><StatusBadge status={eq.status} /></td>
-                  <td className="px-5 py-4 text-sm font-mono text-foreground">{eq.mtbf}</td>
-                  <td className="px-5 py-4 text-sm text-muted-foreground">{eq.nextMaintenance}</td>
-                  <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center gap-1">
-                      <button onClick={(e) => { e.stopPropagation(); setQrEquipment(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors" title="QR Code"><QrCode className="h-4 w-4" /></button>
-                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </motion.div>
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
 
       {/* Add Modal */}
       <AnimatePresence>
@@ -236,6 +267,24 @@ const Equipements = () => {
                 <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
               </div>
               <div className="space-y-3">
+                {/* Image upload */}
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Photo de l'équipement</label>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-28 rounded-lg border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors overflow-hidden"
+                  >
+                    {form.imageUrl ? (
+                      <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <ImageIcon className="h-6 w-6 text-muted-foreground/50 mb-1" />
+                        <p className="text-xs text-muted-foreground">Cliquez pour uploader une image</p>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nom de l'équipement *</label>
                   <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Ex: Compresseur XL-500" />
@@ -275,8 +324,9 @@ const Equipements = () => {
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setShowAddModal(false)} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">Annuler</button>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAdd} className="flex-1 h-10 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25">
-                    Ajouter
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAdd} disabled={submitting}
+                    className="flex-1 h-10 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 disabled:opacity-50">
+                    {submitting ? 'Ajout...' : 'Ajouter'}
                   </motion.button>
                 </div>
               </div>
@@ -292,8 +342,15 @@ const Equipements = () => {
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }} className="glass-card-strong w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Settings2 className="h-6 w-6 text-primary" />
+                  <div
+                    className="w-14 h-14 rounded-xl overflow-hidden bg-primary/10 flex items-center justify-center cursor-pointer"
+                    onClick={() => { if (selectedEq.imageUrl) setPreviewImage({ src: selectedEq.imageUrl, alt: selectedEq.name }); }}
+                  >
+                    {selectedEq.imageUrl ? (
+                      <img src={selectedEq.imageUrl} alt={selectedEq.name} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <Settings2 className="h-6 w-6 text-primary" />
+                    )}
                   </div>
                   <div>
                     <h2 className="text-base font-semibold text-foreground">{selectedEq.name}</h2>
@@ -394,6 +451,11 @@ const Equipements = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <ImagePreviewModal src={previewImage.src} alt={previewImage.alt} open={!!previewImage} onClose={() => setPreviewImage(null)} />
+      )}
     </div>
   );
 };
