@@ -78,6 +78,7 @@ const AppSidebar = () => {
     { key: 'analytics', label: t('nav.analytics'), items: navAnalytics },
     { key: 'innovation', label: t('nav.innovation'), items: navInnovation },
     { key: 'strategic', label: t('nav.strategic'), items: navStrategic },
+    { key: 'enterprise', label: 'Enterprise', items: navEnterprise },
   ];
 
   return (

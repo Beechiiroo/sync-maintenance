@@ -111,6 +111,13 @@ const App = () => (
                 <Route path="/skill-matrix" element={<SkillMatrix />} />
                 <Route path="/experiment-sim" element={<ExperimentSimulator />} />
                 <Route path="/ai-reports" element={<AIReports />} />
+                <Route path="/contracts" element={<Contracts />} />
+                <Route path="/downtime" element={<DowntimeAnalyzer />} />
+                <Route path="/budget" element={<BudgetControl />} />
+                <Route path="/risk-matrix" element={<RiskMatrix />} />
+                <Route path="/qr-inventory" element={<QRInventory />} />
+                <Route path="/photo-evidence" element={<PhotoEvidence />} />
+                <Route path="/maturity-score" element={<MaturityScore />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
