@@ -48,6 +48,13 @@ const PlantLayout = lazy(() => import("./pages/PlantLayout"));
 const SkillMatrix = lazy(() => import("./pages/SkillMatrix"));
 const ExperimentSimulator = lazy(() => import("./pages/ExperimentSimulator"));
 const AIReports = lazy(() => import("./pages/AIReports"));
+const Contracts = lazy(() => import("./pages/Contracts"));
+const DowntimeAnalyzer = lazy(() => import("./pages/DowntimeAnalyzer"));
+const BudgetControl = lazy(() => import("./pages/BudgetControl"));
+const RiskMatrix = lazy(() => import("./pages/RiskMatrix"));
+const QRInventory = lazy(() => import("./pages/QRInventory"));
+const PhotoEvidence = lazy(() => import("./pages/PhotoEvidence"));
+const MaturityScore = lazy(() => import("./pages/MaturityScore"));
 
 const queryClient = new QueryClient();
 
