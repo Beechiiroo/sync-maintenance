@@ -48,6 +48,13 @@ const PlantLayout = lazy(() => import("./pages/PlantLayout"));
 const SkillMatrix = lazy(() => import("./pages/SkillMatrix"));
 const ExperimentSimulator = lazy(() => import("./pages/ExperimentSimulator"));
 const AIReports = lazy(() => import("./pages/AIReports"));
+const Contracts = lazy(() => import("./pages/Contracts"));
+const DowntimeAnalyzer = lazy(() => import("./pages/DowntimeAnalyzer"));
+const BudgetControl = lazy(() => import("./pages/BudgetControl"));
+const RiskMatrix = lazy(() => import("./pages/RiskMatrix"));
+const QRInventory = lazy(() => import("./pages/QRInventory"));
+const PhotoEvidence = lazy(() => import("./pages/PhotoEvidence"));
+const MaturityScore = lazy(() => import("./pages/MaturityScore"));
 
 const queryClient = new QueryClient();
 
@@ -104,6 +111,13 @@ const App = () => (
                 <Route path="/skill-matrix" element={<SkillMatrix />} />
                 <Route path="/experiment-sim" element={<ExperimentSimulator />} />
                 <Route path="/ai-reports" element={<AIReports />} />
+                <Route path="/contracts" element={<Contracts />} />
+                <Route path="/downtime" element={<DowntimeAnalyzer />} />
+                <Route path="/budget" element={<BudgetControl />} />
+                <Route path="/risk-matrix" element={<RiskMatrix />} />
+                <Route path="/qr-inventory" element={<QRInventory />} />
+                <Route path="/photo-evidence" element={<PhotoEvidence />} />
+                <Route path="/maturity-score" element={<MaturityScore />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

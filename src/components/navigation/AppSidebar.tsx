@@ -1,42 +1,9 @@
 import { 
-  LayoutDashboard, 
-  Settings2, 
-  Wrench, 
-  ClipboardList, 
-  CalendarClock, 
-  Users, 
-  Package, 
-  BrainCircuit,
-  ChevronLeft,
-  ChevronRight,
-  Factory,
-  Activity,
-  Box,
-  BarChart3,
-  Award,
-  Leaf,
-  Gamepad2,
-  Bot,
-  Sparkles,
-  UserCircle2,
-  Siren,
-  Clock,
-  Eye,
-  Crown,
-  Search,
-  BookOpen,
-  Shield,
-  FileText,
-  Recycle,
-  Building2,
-  GitBranch,
-  Zap,
-  ShoppingCart,
-  HardHat,
-  Map,
-  GraduationCap,
-  FlaskConical,
-  FileBarChart
+  LayoutDashboard, Settings2, Wrench, ClipboardList, CalendarClock, Users, Package, BrainCircuit,
+  ChevronLeft, ChevronRight, Factory, Activity, Box, BarChart3, Award, Leaf, Gamepad2, Bot,
+  Sparkles, UserCircle2, Siren, Clock, Eye, Crown, Search, BookOpen, Shield, FileText,
+  Recycle, Building2, GitBranch, Zap, ShoppingCart, HardHat, Map, GraduationCap, FlaskConical,
+  FileBarChart, Handshake, Timer, Wallet, Target, QrCode, Camera, Gauge
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
@@ -96,11 +63,22 @@ const AppSidebar = () => {
     { to: '/ai-reports', icon: FileBarChart, label: t('nav.aiReports') },
   ];
 
+  const navEnterprise = [
+    { to: '/contracts', icon: Handshake, label: 'Contrats' },
+    { to: '/downtime', icon: Timer, label: 'Downtime' },
+    { to: '/budget', icon: Wallet, label: 'Budget' },
+    { to: '/risk-matrix', icon: Target, label: 'Matrice RPN' },
+    { to: '/qr-inventory', icon: QrCode, label: 'QR Stock' },
+    { to: '/photo-evidence', icon: Camera, label: 'Photos' },
+    { to: '/maturity-score', icon: Gauge, label: 'Maturité' },
+  ];
+
   const sections = [
     { key: 'operations', label: t('nav.operations'), items: navMain },
     { key: 'analytics', label: t('nav.analytics'), items: navAnalytics },
     { key: 'innovation', label: t('nav.innovation'), items: navInnovation },
     { key: 'strategic', label: t('nav.strategic'), items: navStrategic },
+    { key: 'enterprise', label: 'Enterprise', items: navEnterprise },
   ];
 
   return (
