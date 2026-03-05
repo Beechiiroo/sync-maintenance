@@ -63,6 +63,16 @@ const AppSidebar = () => {
     { to: '/ai-reports', icon: FileBarChart, label: t('nav.aiReports') },
   ];
 
+  const navEnterprise = [
+    { to: '/contracts', icon: Handshake, label: 'Contrats' },
+    { to: '/downtime', icon: Timer, label: 'Downtime' },
+    { to: '/budget', icon: Wallet, label: 'Budget' },
+    { to: '/risk-matrix', icon: Target, label: 'Matrice RPN' },
+    { to: '/qr-inventory', icon: QrCode, label: 'QR Stock' },
+    { to: '/photo-evidence', icon: Camera, label: 'Photos' },
+    { to: '/maturity-score', icon: Gauge, label: 'Maturité' },
+  ];
+
   const sections = [
     { key: 'operations', label: t('nav.operations'), items: navMain },
     { key: 'analytics', label: t('nav.analytics'), items: navAnalytics },
