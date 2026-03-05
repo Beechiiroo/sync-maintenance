@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Award, TrendingUp, Clock, Wrench, BarChart3, CheckCircle2, AlertTriangle, Lightbulb } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
