@@ -561,7 +561,12 @@ const Auth = () => {
     }
   }, [email, password, fullName, authMode, navigate, toast]);
 
-  const ACCESS_LEVELS: AccessLevel[] = ['Technicien', 'Superviseur', 'Directeur'];
+  const ACCESS_LEVELS: { key: AccessLevel; label: string; icon: string; desc: string }[] = [
+    { key: 'admin', label: 'Admin', icon: '👔', desc: 'Accès complet' },
+    { key: 'technician', label: 'Technicien', icon: '🔧', desc: 'Interventions' },
+    { key: 'assistant', label: 'Assistant', icon: '📋', desc: 'Support & suivi' },
+    { key: 'client', label: 'Client', icon: '🏭', desc: 'Consultation' },
+  ];
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: '#060910', fontFamily: '"IBM Plex Sans", sans-serif' }}>
