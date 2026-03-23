@@ -546,7 +546,7 @@ const Auth = () => {
       if (authMode === 'signup') {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { data: { full_name: fullName || email.split('@')[0] }, emailRedirectTo: window.location.origin }
+          options: { data: { full_name: fullName || email.split('@')[0], role: accessLevel }, emailRedirectTo: window.location.origin }
         });
         if (error) { toast({ title: 'Erreur d\'inscription', description: error.message, variant: 'destructive' }); return; }
         toast({ title: 'Inscription réussie', description: 'Vérifiez votre email pour confirmer votre compte.' });
