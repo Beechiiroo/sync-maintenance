@@ -7,7 +7,7 @@ import {
 import KPICard from '@/components/dashboard/KPICard';
 import { InterventionsChart, EquipmentStatusChart, CostChart } from '@/components/dashboard/DashboardCharts';
 import RecentInterventions from '@/components/dashboard/RecentInterventions';
-import { motion as m } from 'framer-motion';
+import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 const heatmapData = [
@@ -250,12 +250,14 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Bottom: Cost Chart */}
+      {/* AI Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-3">
-          <CostChart />
+        <div className="lg:col-span-2">
+          <AIInsightsPanel />
         </div>
+        <CostChart />
       </div>
+
     </div>
   );
 };

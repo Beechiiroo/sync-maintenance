@@ -5,7 +5,7 @@ import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type AccessLevel = 'Technicien' | 'Superviseur' | 'Directeur';
+type AccessLevel = 'admin' | 'technician' | 'assistant' | 'client';
 type AuthMode = 'login' | 'signup';
 type Lang = { code: string; flag: string; label: string; native: string };
 
@@ -495,7 +495,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [accessLevel, setAccessLevel] = useState<AccessLevel>('Technicien');
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>('client');
   const [lang, setLang] = useState('fr');
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [sessionId] = useState(genSessionId);
@@ -546,7 +546,7 @@ const Auth = () => {
       if (authMode === 'signup') {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { data: { full_name: fullName || email.split('@')[0] }, emailRedirectTo: window.location.origin }
+          options: { data: { full_name: fullName || email.split('@')[0], role: accessLevel }, emailRedirectTo: window.location.origin }
         });
         if (error) { toast({ title: 'Erreur d\'inscription', description: error.message, variant: 'destructive' }); return; }
         toast({ title: 'Inscription réussie', description: 'Vérifiez votre email pour confirmer votre compte.' });
@@ -561,7 +561,12 @@ const Auth = () => {
     }
   }, [email, password, fullName, authMode, navigate, toast]);
 
-  const ACCESS_LEVELS: AccessLevel[] = ['Technicien', 'Superviseur', 'Directeur'];
+  const ACCESS_LEVELS: { key: AccessLevel; label: string; icon: string; desc: string }[] = [
+    { key: 'admin', label: 'Admin', icon: '👔', desc: 'Accès complet' },
+    { key: 'technician', label: 'Technicien', icon: '🔧', desc: 'Interventions' },
+    { key: 'assistant', label: 'Assistant', icon: '📋', desc: 'Support & suivi' },
+    { key: 'client', label: 'Client', icon: '🏭', desc: 'Consultation' },
+  ];
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: '#060910', fontFamily: '"IBM Plex Sans", sans-serif' }}>
@@ -747,18 +752,20 @@ const Auth = () => {
               {/* Access level */}
               <div style={{ marginBottom: 16 }}>
                 <label className="gmao-mono" style={{ display: 'block', fontSize: 10, color: '#4a7a9b', marginBottom: 8, letterSpacing: '0.08em' }}>NIVEAU D'ACCÈS</label>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {ACCESS_LEVELS.map(lvl => (
-                    <button key={lvl} type="button" onClick={() => setAccessLevel(lvl)} className="gmao-mono"
+                    <button key={lvl.key} type="button" onClick={() => setAccessLevel(lvl.key)} className="gmao-mono"
                       style={{
-                        flex: 1, padding: '8px 4px', borderRadius: 7, fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                        letterSpacing: '0.05em', transition: 'all 0.25s',
-                        background: accessLevel === lvl ? 'linear-gradient(135deg, rgba(30,144,255,0.2), rgba(30,144,255,0.1))' : 'rgba(14,26,48,0.5)',
-                        border: `1px solid ${accessLevel === lvl ? '#1e90ff' : '#1e3a5a'}`,
-                        color: accessLevel === lvl ? '#1e90ff' : '#4a7a9b',
-                        boxShadow: accessLevel === lvl ? '0 0 12px rgba(30,144,255,0.2)' : 'none',
+                        padding: '10px 8px', borderRadius: 8, fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                        letterSpacing: '0.04em', transition: 'all 0.25s', textAlign: 'left',
+                        background: accessLevel === lvl.key ? 'linear-gradient(135deg, rgba(30,144,255,0.2), rgba(30,144,255,0.1))' : 'rgba(14,26,48,0.5)',
+                        border: `1px solid ${accessLevel === lvl.key ? '#1e90ff' : '#1e3a5a'}`,
+                        color: accessLevel === lvl.key ? '#1e90ff' : '#4a7a9b',
+                        boxShadow: accessLevel === lvl.key ? '0 0 12px rgba(30,144,255,0.2)' : 'none',
                       }}>
-                      {lvl === 'Technicien' ? '🔧' : lvl === 'Superviseur' ? '📊' : '👔'} {lvl}
+                      <div style={{ fontSize: 16, marginBottom: 2 }}>{lvl.icon}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700 }}>{lvl.label}</div>
+                      <div style={{ fontSize: 8, opacity: 0.7, marginTop: 1 }}>{lvl.desc}</div>
                     </button>
                   ))}
                 </div>

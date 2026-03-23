@@ -1,9 +1,10 @@
-import { Moon, Sun, Bell, Search } from 'lucide-react';
+import { Moon, Sun, Search } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleTheme } from '@/store/slices/themeSlice';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import SmartNotifications from './SmartNotifications';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,14 +60,7 @@ const TopBar = () => {
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </motion.button>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors relative"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full gradient-accent" />
-        </motion.button>
+        <SmartNotifications />
 
         <LanguageSwitcher />
 
