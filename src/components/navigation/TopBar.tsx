@@ -4,6 +4,7 @@ import { toggleTheme } from '@/store/slices/themeSlice';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import SmartNotifications from './SmartNotifications';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
