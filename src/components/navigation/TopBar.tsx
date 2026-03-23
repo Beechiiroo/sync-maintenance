@@ -1,4 +1,4 @@
-import { Moon, Sun, Bell, Search } from 'lucide-react';
+import { Moon, Sun, Search } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleTheme } from '@/store/slices/themeSlice';
 import { motion } from 'framer-motion';

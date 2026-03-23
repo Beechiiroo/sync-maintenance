@@ -752,18 +752,20 @@ const Auth = () => {
               {/* Access level */}
               <div style={{ marginBottom: 16 }}>
                 <label className="gmao-mono" style={{ display: 'block', fontSize: 10, color: '#4a7a9b', marginBottom: 8, letterSpacing: '0.08em' }}>NIVEAU D'ACCÈS</label>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {ACCESS_LEVELS.map(lvl => (
-                    <button key={lvl} type="button" onClick={() => setAccessLevel(lvl)} className="gmao-mono"
+                    <button key={lvl.key} type="button" onClick={() => setAccessLevel(lvl.key)} className="gmao-mono"
                       style={{
-                        flex: 1, padding: '8px 4px', borderRadius: 7, fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                        letterSpacing: '0.05em', transition: 'all 0.25s',
-                        background: accessLevel === lvl ? 'linear-gradient(135deg, rgba(30,144,255,0.2), rgba(30,144,255,0.1))' : 'rgba(14,26,48,0.5)',
-                        border: `1px solid ${accessLevel === lvl ? '#1e90ff' : '#1e3a5a'}`,
-                        color: accessLevel === lvl ? '#1e90ff' : '#4a7a9b',
-                        boxShadow: accessLevel === lvl ? '0 0 12px rgba(30,144,255,0.2)' : 'none',
+                        padding: '10px 8px', borderRadius: 8, fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                        letterSpacing: '0.04em', transition: 'all 0.25s', textAlign: 'left',
+                        background: accessLevel === lvl.key ? 'linear-gradient(135deg, rgba(30,144,255,0.2), rgba(30,144,255,0.1))' : 'rgba(14,26,48,0.5)',
+                        border: `1px solid ${accessLevel === lvl.key ? '#1e90ff' : '#1e3a5a'}`,
+                        color: accessLevel === lvl.key ? '#1e90ff' : '#4a7a9b',
+                        boxShadow: accessLevel === lvl.key ? '0 0 12px rgba(30,144,255,0.2)' : 'none',
                       }}>
-                      {lvl === 'Technicien' ? '🔧' : lvl === 'Superviseur' ? '📊' : '👔'} {lvl}
+                      <div style={{ fontSize: 16, marginBottom: 2 }}>{lvl.icon}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700 }}>{lvl.label}</div>
+                      <div style={{ fontSize: 8, opacity: 0.7, marginTop: 1 }}>{lvl.desc}</div>
                     </button>
                   ))}
                 </div>
