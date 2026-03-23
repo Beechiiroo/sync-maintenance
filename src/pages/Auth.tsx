@@ -5,7 +5,7 @@ import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type AccessLevel = 'Technicien' | 'Superviseur' | 'Directeur';
+type AccessLevel = 'admin' | 'technician' | 'assistant' | 'client';
 type AuthMode = 'login' | 'signup';
 type Lang = { code: string; flag: string; label: string; native: string };
 
