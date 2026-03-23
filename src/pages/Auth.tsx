@@ -495,7 +495,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [accessLevel, setAccessLevel] = useState<AccessLevel>('Technicien');
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>('client');
   const [lang, setLang] = useState('fr');
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [sessionId] = useState(genSessionId);
