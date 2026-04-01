@@ -56,6 +56,7 @@ const RiskMatrix = lazy(() => import("./pages/RiskMatrix"));
 const QRInventory = lazy(() => import("./pages/QRInventory"));
 const PhotoEvidence = lazy(() => import("./pages/PhotoEvidence"));
 const MaturityScore = lazy(() => import("./pages/MaturityScore"));
+const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 
 const queryClient = new QueryClient();
 
