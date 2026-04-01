@@ -202,10 +202,11 @@ const Dashboard = () => {
       </motion.div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <KPICard title="MTTR" value="2.4h" subtitle="Temps moyen de réparation" icon={Clock} trend={{ value: -12, label: 'vs mois dernier' }} variant="primary" delay={0.05} />
         <KPICard title="MTBF" value="168h" subtitle="Temps moyen entre pannes" icon={Activity} trend={{ value: 8, label: 'vs mois dernier' }} variant="success" delay={0.1} />
         <KPICard title="Taux de panne" value="4.2%" subtitle="3 équipements en panne" icon={AlertTriangle} trend={{ value: -15, label: 'vs mois dernier' }} variant="warning" delay={0.15} />
+        <KPICard title="Disponibilité" value="87.5%" subtitle="Équipements opérationnels" icon={CheckCircle2} trend={{ value: 3, label: 'vs mois dernier' }} variant="success" delay={0.18} />
         <KPICard title="Coûts maintenance" value="2 900€" subtitle="Budget mensuel" icon={DollarSign} trend={{ value: -22, label: 'vs mois dernier' }} variant="danger" delay={0.2} />
       </div>
 
