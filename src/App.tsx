@@ -10,6 +10,7 @@ import AppLayout from "./components/layout/AppLayout";
 import NotFound from "./pages/NotFound";
 import ChatBot from "./components/chatbot/ChatBot";
 import CommandPalette from "./components/command-palette/CommandPalette";
+import RoleGuard from "./components/auth/RoleGuard";
 
 const Dashboard = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
