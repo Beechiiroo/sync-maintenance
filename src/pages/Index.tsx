@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Clock, AlertTriangle, TrendingDown, Wrench, DollarSign,
-  Settings2, CheckCircle2, Maximize2, Minimize2, Zap, Bell, X
+  Settings2, CheckCircle2, Maximize2, Minimize2, Zap, Bell, X, Download, FileText, Percent
 } from 'lucide-react';
+import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 import KPICard from '@/components/dashboard/KPICard';
 import { InterventionsChart, EquipmentStatusChart, CostChart } from '@/components/dashboard/DashboardCharts';
 import RecentInterventions from '@/components/dashboard/RecentInterventions';
