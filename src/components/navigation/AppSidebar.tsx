@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, Factory, Activity, Box, BarChart3, Award, Leaf, Gamepad2, Bot,
   Sparkles, UserCircle2, Siren, Clock, Eye, Crown, Search, BookOpen, Shield, FileText,
   Recycle, Building2, GitBranch, Zap, ShoppingCart, HardHat, Map, GraduationCap, FlaskConical,
-  FileBarChart, Handshake, Timer, Wallet, Target, QrCode, Camera, Gauge
+  FileBarChart, Handshake, Timer, Wallet, Target, QrCode, Camera, Gauge, ScrollText
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
@@ -71,6 +71,7 @@ const AppSidebar = () => {
     { to: '/qr-inventory', icon: QrCode, label: 'QR Stock' },
     { to: '/photo-evidence', icon: Camera, label: 'Photos' },
     { to: '/maturity-score', icon: Gauge, label: 'Maturité' },
+    { to: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },
   ];
 
   const sections = [

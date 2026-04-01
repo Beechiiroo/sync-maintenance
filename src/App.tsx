@@ -10,6 +10,7 @@ import AppLayout from "./components/layout/AppLayout";
 import NotFound from "./pages/NotFound";
 import ChatBot from "./components/chatbot/ChatBot";
 import CommandPalette from "./components/command-palette/CommandPalette";
+import RoleGuard from "./components/auth/RoleGuard";
 
 const Dashboard = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -55,6 +56,7 @@ const RiskMatrix = lazy(() => import("./pages/RiskMatrix"));
 const QRInventory = lazy(() => import("./pages/QRInventory"));
 const PhotoEvidence = lazy(() => import("./pages/PhotoEvidence"));
 const MaturityScore = lazy(() => import("./pages/MaturityScore"));
+const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 
 const queryClient = new QueryClient();
 
@@ -75,49 +77,64 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route element={<AppLayout />}>
+                {/* Accessible à tous les rôles */}
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/equipements" element={<Equipements />} />
-                <Route path="/equipements-3d" element={<Equipements3D />} />
-                <Route path="/interventions" element={<Interventions />} />
-                <Route path="/maintenance" element={<Maintenance />} />
-                <Route path="/predictive" element={<Predictive />} />
-                <Route path="/techniciens" element={<Techniciens />} />
-                <Route path="/stock" element={<Stock />} />
-                <Route path="/scoring" element={<PerformanceScoring />} />
-                <Route path="/rapports" element={<StrategicReporting />} />
-                <Route path="/ia" element={<ModuleIA />} />
-                <Route path="/gamification" element={<Gamification />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/eco" element={<EcoMaintenance />} />
-                <Route path="/ai-agents" element={<AIAgents />} />
-                <Route path="/recommendations" element={<Recommendations />} />
-                <Route path="/tech-passport" element={<TechPassport />} />
-                <Route path="/war-room" element={<WarRoom />} />
-                <Route path="/timeline" element={<MaintenanceTimeline />} />
-                <Route path="/vision" element={<VisionCenter />} />
-                <Route path="/executive" element={<ExecutiveAI />} />
-                <Route path="/investigation" element={<Investigation />} />
-                <Route path="/training" element={<Training />} />
-                <Route path="/compliance" element={<Compliance />} />
-                <Route path="/knowledge" element={<Knowledge />} />
-                {/* Strategic modules */}
-                <Route path="/asset-lifecycle" element={<AssetLifecycle />} />
-                <Route path="/multi-site" element={<MultiSite />} />
-                <Route path="/workflow-builder" element={<WorkflowBuilder />} />
-                <Route path="/failure-patterns" element={<FailurePatterns />} />
-                <Route path="/spare-forecasting" element={<SpareForecasting />} />
-                <Route path="/safety-risk" element={<SafetyRisk />} />
-                <Route path="/plant-layout" element={<PlantLayout />} />
-                <Route path="/skill-matrix" element={<SkillMatrix />} />
-                <Route path="/experiment-sim" element={<ExperimentSimulator />} />
-                <Route path="/ai-reports" element={<AIReports />} />
-                <Route path="/contracts" element={<Contracts />} />
-                <Route path="/downtime" element={<DowntimeAnalyzer />} />
-                <Route path="/budget" element={<BudgetControl />} />
-                <Route path="/risk-matrix" element={<RiskMatrix />} />
-                <Route path="/qr-inventory" element={<QRInventory />} />
-                <Route path="/photo-evidence" element={<PhotoEvidence />} />
-                <Route path="/maturity-score" element={<MaturityScore />} />
+
+                {/* Admin + Assistant: accès complet gestion */}
+                <Route path="/equipements" element={<RoleGuard allowedRoles={['admin', 'assistant']}><Equipements /></RoleGuard>} />
+                <Route path="/equipements-3d" element={<RoleGuard allowedRoles={['admin', 'assistant']}><Equipements3D /></RoleGuard>} />
+                <Route path="/techniciens" element={<RoleGuard allowedRoles={['admin', 'assistant']}><Techniciens /></RoleGuard>} />
+                <Route path="/stock" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><Stock /></RoleGuard>} />
+
+                {/* Admin + Assistant + Technician: interventions & maintenance */}
+                <Route path="/interventions" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><Interventions /></RoleGuard>} />
+                <Route path="/maintenance" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><Maintenance /></RoleGuard>} />
+                <Route path="/predictive" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><Predictive /></RoleGuard>} />
+
+                {/* Analytics - Admin + Assistant */}
+                <Route path="/scoring" element={<RoleGuard allowedRoles={['admin', 'assistant']}><PerformanceScoring /></RoleGuard>} />
+                <Route path="/rapports" element={<RoleGuard allowedRoles={['admin', 'assistant']}><StrategicReporting /></RoleGuard>} />
+                <Route path="/ia" element={<RoleGuard allowedRoles={['admin', 'assistant']}><ModuleIA /></RoleGuard>} />
+                <Route path="/gamification" element={<Gamification />} />
+                <Route path="/eco" element={<RoleGuard allowedRoles={['admin', 'assistant']}><EcoMaintenance /></RoleGuard>} />
+
+                {/* Innovation - Admin only */}
+                <Route path="/ai-agents" element={<RoleGuard allowedRoles={['admin']}><AIAgents /></RoleGuard>} />
+                <Route path="/recommendations" element={<RoleGuard allowedRoles={['admin', 'assistant']}><Recommendations /></RoleGuard>} />
+                <Route path="/tech-passport" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><TechPassport /></RoleGuard>} />
+                <Route path="/war-room" element={<RoleGuard allowedRoles={['admin']}><WarRoom /></RoleGuard>} />
+                <Route path="/timeline" element={<RoleGuard allowedRoles={['admin', 'assistant']}><MaintenanceTimeline /></RoleGuard>} />
+                <Route path="/vision" element={<RoleGuard allowedRoles={['admin']}><VisionCenter /></RoleGuard>} />
+                <Route path="/executive" element={<RoleGuard allowedRoles={['admin']}><ExecutiveAI /></RoleGuard>} />
+                <Route path="/investigation" element={<RoleGuard allowedRoles={['admin', 'assistant']}><Investigation /></RoleGuard>} />
+                <Route path="/training" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><Training /></RoleGuard>} />
+                <Route path="/compliance" element={<RoleGuard allowedRoles={['admin', 'assistant']}><Compliance /></RoleGuard>} />
+                <Route path="/knowledge" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><Knowledge /></RoleGuard>} />
+
+                {/* Strategic - Admin + Assistant */}
+                <Route path="/asset-lifecycle" element={<RoleGuard allowedRoles={['admin', 'assistant']}><AssetLifecycle /></RoleGuard>} />
+                <Route path="/multi-site" element={<RoleGuard allowedRoles={['admin']}><MultiSite /></RoleGuard>} />
+                <Route path="/workflow-builder" element={<RoleGuard allowedRoles={['admin']}><WorkflowBuilder /></RoleGuard>} />
+                <Route path="/failure-patterns" element={<RoleGuard allowedRoles={['admin', 'assistant']}><FailurePatterns /></RoleGuard>} />
+                <Route path="/spare-forecasting" element={<RoleGuard allowedRoles={['admin', 'assistant']}><SpareForecasting /></RoleGuard>} />
+                <Route path="/safety-risk" element={<RoleGuard allowedRoles={['admin', 'assistant']}><SafetyRisk /></RoleGuard>} />
+                <Route path="/plant-layout" element={<RoleGuard allowedRoles={['admin', 'assistant']}><PlantLayout /></RoleGuard>} />
+                <Route path="/skill-matrix" element={<RoleGuard allowedRoles={['admin', 'assistant']}><SkillMatrix /></RoleGuard>} />
+                <Route path="/experiment-sim" element={<RoleGuard allowedRoles={['admin']}><ExperimentSimulator /></RoleGuard>} />
+                <Route path="/ai-reports" element={<RoleGuard allowedRoles={['admin', 'assistant']}><AIReports /></RoleGuard>} />
+
+                {/* Enterprise - Admin + Assistant */}
+                <Route path="/contracts" element={<RoleGuard allowedRoles={['admin', 'assistant']}><Contracts /></RoleGuard>} />
+                <Route path="/downtime" element={<RoleGuard allowedRoles={['admin', 'assistant']}><DowntimeAnalyzer /></RoleGuard>} />
+                <Route path="/budget" element={<RoleGuard allowedRoles={['admin']}><BudgetControl /></RoleGuard>} />
+                <Route path="/risk-matrix" element={<RoleGuard allowedRoles={['admin', 'assistant']}><RiskMatrix /></RoleGuard>} />
+                <Route path="/qr-inventory" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><QRInventory /></RoleGuard>} />
+                <Route path="/photo-evidence" element={<RoleGuard allowedRoles={['admin', 'assistant', 'technician']}><PhotoEvidence /></RoleGuard>} />
+                <Route path="/maturity-score" element={<RoleGuard allowedRoles={['admin']}><MaturityScore /></RoleGuard>} />
+
+                {/* Audit - Admin only */}
+                <Route path="/audit-logs" element={<RoleGuard allowedRoles={['admin']}><AuditLogs /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

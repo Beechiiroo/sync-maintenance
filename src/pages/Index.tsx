@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Clock, AlertTriangle, TrendingDown, Wrench, DollarSign,
-  Settings2, CheckCircle2, Maximize2, Minimize2, Zap, Bell, X
+  Settings2, CheckCircle2, Maximize2, Minimize2, Zap, Bell, X, Download, FileText, Percent
 } from 'lucide-react';
+import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 import KPICard from '@/components/dashboard/KPICard';
 import { InterventionsChart, EquipmentStatusChart, CostChart } from '@/components/dashboard/DashboardCharts';
 import RecentInterventions from '@/components/dashboard/RecentInterventions';
@@ -138,6 +139,27 @@ const Dashboard = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={() => exportToCSV(
+              [
+                { kpi: 'MTTR', value: '2.4h', trend: '-12%' },
+                { kpi: 'MTBF', value: '168h', trend: '+8%' },
+                { kpi: 'Taux de panne', value: '4.2%', trend: '-15%' },
+                { kpi: 'Disponibilité', value: '87.5%', trend: '+3%' },
+                { kpi: 'Coûts maintenance', value: '2 900€', trend: '-22%' },
+                { kpi: 'Interventions', value: '34', trend: '' },
+                { kpi: 'Préventif/Correctif', value: '78/22', trend: '' },
+              ],
+              'dashboard-kpis',
+              [{ key: 'kpi', label: 'KPI' }, { key: 'value', label: 'Valeur' }, { key: 'trend', label: 'Tendance' }]
+            )}
+            className="px-3 py-2 rounded-lg bg-muted text-muted-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors"
+          >
+            <Download className="h-4 w-4" /> Export
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className="px-4 py-2 rounded-lg bg-muted text-muted-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors"
           >
             <Wrench className="h-4 w-4" />+ Nouvelle intervention
@@ -180,10 +202,11 @@ const Dashboard = () => {
       </motion.div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <KPICard title="MTTR" value="2.4h" subtitle="Temps moyen de réparation" icon={Clock} trend={{ value: -12, label: 'vs mois dernier' }} variant="primary" delay={0.05} />
         <KPICard title="MTBF" value="168h" subtitle="Temps moyen entre pannes" icon={Activity} trend={{ value: 8, label: 'vs mois dernier' }} variant="success" delay={0.1} />
         <KPICard title="Taux de panne" value="4.2%" subtitle="3 équipements en panne" icon={AlertTriangle} trend={{ value: -15, label: 'vs mois dernier' }} variant="warning" delay={0.15} />
+        <KPICard title="Disponibilité" value="87.5%" subtitle="Équipements opérationnels" icon={CheckCircle2} trend={{ value: 3, label: 'vs mois dernier' }} variant="success" delay={0.18} />
         <KPICard title="Coûts maintenance" value="2 900€" subtitle="Budget mensuel" icon={DollarSign} trend={{ value: -22, label: 'vs mois dernier' }} variant="danger" delay={0.2} />
       </div>
 
