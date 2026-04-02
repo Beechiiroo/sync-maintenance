@@ -465,16 +465,32 @@ const Auth = () => {
   const [lampOn, setLampOn] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
 
+  const [showRoleCard, setShowRoleCard] = useState(false);
+  const [loggedInRole, setLoggedInRole] = useState<AccessLevel>('client');
+  const [loggedInName, setLoggedInName] = useState('');
+
   // Auto-redirect if already authenticated
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) navigate('/', { replace: true });
+      if (session && !showRoleCard) {
+        const role = (session.user.user_metadata?.role || 'client') as AccessLevel;
+        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '';
+        setLoggedInRole(role);
+        setLoggedInName(name);
+        setShowRoleCard(true);
+      }
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/', { replace: true });
+      if (session && !showRoleCard) {
+        const role = (session.user.user_metadata?.role || 'client') as AccessLevel;
+        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '';
+        setLoggedInRole(role);
+        setLoggedInName(name);
+        setShowRoleCard(true);
+      }
     });
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, showRoleCard]);
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
     setOauthLoading(provider);
