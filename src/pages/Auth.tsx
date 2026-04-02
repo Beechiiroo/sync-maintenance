@@ -565,17 +565,21 @@ const Auth = () => {
           options: { data: { full_name: fullName || email.split('@')[0], role: accessLevel }, emailRedirectTo: window.location.origin }
         });
         if (error) { toast({ title: 'Erreur d\'inscription', description: error.message, variant: 'destructive' }); return; }
-        toast({ title: 'Inscription réussie', description: 'Vérifiez votre email pour confirmer votre compte.' });
-        setAuthMode('login');
+        toast({ title: 'Inscription réussie', description: 'Vous pouvez maintenant vous connecter.' });
+        // Auto-login after signup
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        if (loginError) {
+          setAuthMode('login');
+          return;
+        }
         return;
       }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { toast({ title: 'Erreur d\'authentification', description: error.message, variant: 'destructive' }); return; }
-      navigate('/');
     } catch {
       navigate('/');
     }
-  }, [email, password, fullName, authMode, navigate, toast]);
+  }, [email, password, fullName, accessLevel, authMode, navigate, toast]);
 
   const ACCESS_LEVELS: { key: AccessLevel; label: string; icon: string; desc: string }[] = [
     { key: 'admin', label: 'Admin', icon: '👔', desc: 'Accès complet' },
