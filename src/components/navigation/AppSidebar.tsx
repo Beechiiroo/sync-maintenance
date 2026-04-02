@@ -72,6 +72,7 @@ const AppSidebar = () => {
     { to: '/photo-evidence', icon: Camera, label: 'Photos' },
     { to: '/maturity-score', icon: Gauge, label: 'Maturité' },
     { to: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },
+    { to: '/user-management', icon: UserCog, label: 'Utilisateurs' },
   ];
 
   const sections = [
