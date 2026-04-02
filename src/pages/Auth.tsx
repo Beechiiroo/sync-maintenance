@@ -377,8 +377,8 @@ function LoginOverlay({ visible, onDone }: { visible: boolean; onDone: () => voi
             <span>TERMINAL — GMAO AUTH v5.0</span>
             <span style={{ color: '#28c76f', fontSize: 10 }}>● SECURE</span>
           </div>
-          {lines.map((l, i) => (
-            <div key={i} style={{ color: l.includes('✓') ? '#28c76f' : '#1e90ff', marginBottom: 3, animation: 'fadeSlideIn 0.3s ease-out' }}>{l}</div>
+          {lines.filter(Boolean).map((l, i) => (
+            <div key={i} style={{ color: (l || '').includes('✓') ? '#28c76f' : '#1e90ff', marginBottom: 3, animation: 'fadeSlideIn 0.3s ease-out' }}>{l}</div>
           ))}
           <div style={{ color: '#28c76f', display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ animation: 'blink 0.8s infinite' }}>▋</span>
