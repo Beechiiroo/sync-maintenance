@@ -136,6 +136,7 @@ const App = () => (
 
                 {/* Audit - Admin only */}
                 <Route path="/audit-logs" element={<RoleGuard allowedRoles={['admin']}><AuditLogs /></RoleGuard>} />
+                <Route path="/user-management" element={<RoleGuard allowedRoles={['admin']}><UserManagement /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
