@@ -57,6 +57,7 @@ const QRInventory = lazy(() => import("./pages/QRInventory"));
 const PhotoEvidence = lazy(() => import("./pages/PhotoEvidence"));
 const MaturityScore = lazy(() => import("./pages/MaturityScore"));
 const AuditLogs = lazy(() => import("./pages/AuditLogs"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
 
 const queryClient = new QueryClient();
 
@@ -135,6 +136,7 @@ const App = () => (
 
                 {/* Audit - Admin only */}
                 <Route path="/audit-logs" element={<RoleGuard allowedRoles={['admin']}><AuditLogs /></RoleGuard>} />
+                <Route path="/user-management" element={<RoleGuard allowedRoles={['admin']}><UserManagement /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
