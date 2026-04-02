@@ -871,6 +871,79 @@ const Auth = () => {
       </div>
 
       <LoginOverlay visible={overlayVisible} onDone={handleOverlayDone} />
+
+      {/* Role Card After Login */}
+      <AnimatePresence>
+        {showRoleCard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center"
+            style={{ background: 'rgba(6,9,16,0.95)', backdropFilter: 'blur(12px)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', damping: 20 }}
+              className="flex flex-col items-center gap-8 max-w-md w-full px-6"
+            >
+              <div className="text-center">
+                <motion.div initial={{ y: -20 }} animate={{ y: 0 }} className="text-4xl mb-3">
+                  {ACCESS_LEVELS.find(l => l.key === loggedInRole)?.icon || '👤'}
+                </motion.div>
+                <h2 className="gmao-title" style={{ fontSize: 22, fontWeight: 700, color: '#e8f4ff', marginBottom: 4 }}>
+                  Bienvenue, {loggedInName}
+                </h2>
+                <p className="gmao-mono" style={{ fontSize: 11, color: '#4a7a9b' }}>Connexion réussie</p>
+              </div>
+
+              {/* Role Display Grid */}
+              <div style={{ width: '100%' }}>
+                <label className="gmao-mono" style={{ display: 'block', fontSize: 10, color: '#4a7a9b', marginBottom: 10, letterSpacing: '0.08em', textAlign: 'center' }}>
+                  NIVEAU D'ACCÈS
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {ACCESS_LEVELS.map(lvl => (
+                    <div key={lvl.key}
+                      style={{
+                        padding: '14px 12px', borderRadius: 10, textAlign: 'left',
+                        background: loggedInRole === lvl.key ? 'linear-gradient(135deg, rgba(30,144,255,0.25), rgba(30,144,255,0.1))' : 'rgba(14,26,48,0.5)',
+                        border: `2px solid ${loggedInRole === lvl.key ? '#1e90ff' : '#1e3a5a'}`,
+                        boxShadow: loggedInRole === lvl.key ? '0 0 20px rgba(30,144,255,0.3), inset 0 0 12px rgba(30,144,255,0.1)' : 'none',
+                        opacity: loggedInRole === lvl.key ? 1 : 0.4,
+                        transition: 'all 0.3s',
+                      }}>
+                      <div style={{ fontSize: 20, marginBottom: 4 }}>{lvl.icon}</div>
+                      <div className="gmao-mono" style={{ fontSize: 13, fontWeight: 700, color: loggedInRole === lvl.key ? '#1e90ff' : '#4a7a9b' }}>
+                        {lvl.label}
+                      </div>
+                      <div className="gmao-mono" style={{ fontSize: 9, color: loggedInRole === lvl.key ? '#7ab3d4' : '#3a5a7a', marginTop: 2 }}>
+                        {lvl.desc}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => { setShowRoleCard(false); navigate('/', { replace: true }); }}
+                className="gmao-title"
+                style={{
+                  width: '100%', padding: '14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  fontSize: 15, fontWeight: 700, letterSpacing: '0.1em', color: '#ffffff',
+                  background: 'linear-gradient(135deg, #1e90ff, #0050cc)',
+                  boxShadow: '0 0 24px rgba(30,144,255,0.4)',
+                }}>
+                ⚡ ACCÉDER AU DASHBOARD
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
