@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Clock, AlertTriangle, TrendingDown, Wrench, DollarSign,
@@ -62,6 +63,7 @@ const HealthGauge = ({ score }: { score: number }) => {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [commandCenter, setCommandCenter] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [healthScore] = useState(76);
@@ -160,7 +162,8 @@ const Dashboard = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="px-4 py-2 rounded-lg bg-muted text-muted-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors"
+            onClick={() => navigate('/interventions')}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors"
           >
             <Wrench className="h-4 w-4" />+ Nouvelle intervention
           </motion.button>
