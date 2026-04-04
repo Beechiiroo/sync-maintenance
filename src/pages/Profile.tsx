@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { LogOut, Shield, Clock, Globe, User, Monitor, Smartphone, Trash2, Camera, Save, ChevronRight } from 'lucide-react';
+import { LogOut, Shield, Clock, Globe, User, Monitor, Smartphone, Trash2, Camera, Save, ChevronRight, Key, Lock, FileText, Eye, EyeOff, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 type Session = {
   id: string;
@@ -54,6 +54,12 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<'profile' | 'sessions' | 'security'>('profile');
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [securitySection, setSecuritySection] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -351,30 +357,206 @@ export default function Profile() {
                 <Shield className="h-4 w-4 text-primary" /> Sécurité du Compte
               </h3>
               <div className="space-y-3">
-                {[
-                  { label: 'Changer le mot de passe', desc: 'Dernière modification: il y a 30 jours', icon: '🔑' },
-                  { label: 'Authentification à deux facteurs', desc: 'Non activée — Recommandé', icon: '📱', warning: true },
-                  { label: 'Journaux d\'activité', desc: '12 connexions ce mois-ci', icon: '📋' },
-                  { label: 'Appareils de confiance', desc: '2 appareils enregistrés', icon: '🖥️' },
-                ].map((item, i) => (
-                  <button key={i} className="w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all"
-                    style={{ background: 'rgba(14,20,32,0.5)', border: '1px solid rgba(30,144,255,0.08)' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(30,144,255,0.25)')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(30,144,255,0.08)')}>
+                {/* Change Password */}
+                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(14,20,32,0.5)', border: '1px solid rgba(30,144,255,0.08)' }}>
+                  <button onClick={() => setSecuritySection(securitySection === 'password' ? null : 'password')}
+                    className="w-full flex items-center gap-4 p-4 text-left transition-all hover:bg-muted/10">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
-                      style={{ background: item.warning ? 'rgba(255,107,43,0.1)' : 'rgba(30,144,255,0.1)',
-                        border: `1px solid ${item.warning ? 'rgba(255,107,43,0.2)' : 'rgba(30,144,255,0.2)'}` }}>
-                      {item.icon}
-                    </div>
+                      style={{ background: 'rgba(30,144,255,0.1)', border: '1px solid rgba(30,144,255,0.2)' }}>🔑</div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{item.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5" style={{ color: item.warning ? '#ff6b2b' : undefined }}>
-                        {item.desc}
-                      </p>
+                      <p className="text-sm font-medium text-foreground">Changer le mot de passe</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Dernière modification: il y a 30 jours</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${securitySection === 'password' ? 'rotate-90' : ''}`} />
                   </button>
-                ))}
+                  <AnimatePresence>
+                    {securitySection === 'password' && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden">
+                        <div className="px-4 pb-4 space-y-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground font-mono block mb-1">MOT DE PASSE ACTUEL</label>
+                            <div className="relative">
+                              <input type={showPasswords ? 'text' : 'password'} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg text-sm" style={{ background: 'rgba(14,20,32,0.8)', border: '1px solid rgba(30,144,255,0.15)', color: 'hsl(var(--foreground))' }} />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground font-mono block mb-1">NOUVEAU MOT DE PASSE</label>
+                            <input type={showPasswords ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg text-sm" style={{ background: 'rgba(14,20,32,0.8)', border: '1px solid rgba(30,144,255,0.15)', color: 'hsl(var(--foreground))' }} />
+                            {newPassword && (
+                              <div className="mt-1.5 flex gap-1">
+                                {[1,2,3,4].map(i => (
+                                  <div key={i} className="h-1 flex-1 rounded-full" style={{
+                                    background: newPassword.length >= i * 3 ? (i >= 3 ? '#28c76f' : i >= 2 ? '#ff9f43' : '#ef4444') : 'rgba(30,144,255,0.1)'
+                                  }} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground font-mono block mb-1">CONFIRMER</label>
+                            <input type={showPasswords ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg text-sm" style={{ background: 'rgba(14,20,32,0.8)', border: '1px solid rgba(30,144,255,0.15)', color: 'hsl(var(--foreground))' }} />
+                            {confirmPassword && newPassword !== confirmPassword && (
+                              <p className="text-xs mt-1" style={{ color: '#ef4444' }}>Les mots de passe ne correspondent pas</p>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" onClick={() => setShowPasswords(!showPasswords)}>
+                              {showPasswords ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                              {showPasswords ? 'Masquer' : 'Afficher'}
+                            </label>
+                            <button disabled={!currentPassword || !newPassword || newPassword !== confirmPassword || changingPassword}
+                              onClick={async () => {
+                                setChangingPassword(true);
+                                const { error } = await supabase.auth.updateUser({ password: newPassword });
+                                setChangingPassword(false);
+                                if (error) {
+                                  toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+                                } else {
+                                  toast({ title: 'Mot de passe mis à jour', description: 'Votre mot de passe a été changé avec succès.' });
+                                  setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+                                  setSecuritySection(null);
+                                }
+                              }}
+                              className="px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-40 transition-all"
+                              style={{ background: 'linear-gradient(135deg, #1e90ff, #0050cc)', color: '#fff' }}>
+                              {changingPassword ? 'Mise à jour...' : 'Mettre à jour'}
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* 2FA */}
+                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(14,20,32,0.5)', border: '1px solid rgba(30,144,255,0.08)' }}>
+                  <button onClick={() => setSecuritySection(securitySection === '2fa' ? null : '2fa')}
+                    className="w-full flex items-center gap-4 p-4 text-left transition-all hover:bg-muted/10">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                      style={{ background: 'rgba(255,107,43,0.1)', border: '1px solid rgba(255,107,43,0.2)' }}>📱</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">Authentification à deux facteurs</p>
+                      <p className="text-xs mt-0.5" style={{ color: '#ff6b2b' }}>Non activée — Recommandé</p>
+                    </div>
+                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${securitySection === '2fa' ? 'rotate-90' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {securitySection === '2fa' && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden">
+                        <div className="px-4 pb-4 space-y-3">
+                          <div className="flex items-start gap-3 p-3 rounded-lg" style={{ background: 'rgba(255,107,43,0.06)', border: '1px solid rgba(255,107,43,0.15)' }}>
+                            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#ff6b2b' }} />
+                            <div>
+                              <p className="text-xs font-medium text-foreground">Protection supplémentaire recommandée</p>
+                              <p className="text-xs text-muted-foreground mt-1">L'authentification à deux facteurs ajoute une couche de sécurité en exigeant un code de vérification en plus de votre mot de passe.</p>
+                            </div>
+                          </div>
+                          <button className="w-full py-2.5 rounded-lg text-xs font-medium transition-all"
+                            onClick={() => toast({ title: '2FA', description: 'La configuration 2FA sera bientôt disponible.' })}
+                            style={{ background: 'linear-gradient(135deg, rgba(255,107,43,0.15), rgba(255,107,43,0.05))', border: '1px solid rgba(255,107,43,0.3)', color: '#ff6b2b' }}>
+                            <Lock className="inline h-3.5 w-3.5 mr-1.5" /> Activer l'authentification 2FA
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Activity Logs */}
+                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(14,20,32,0.5)', border: '1px solid rgba(30,144,255,0.08)' }}>
+                  <button onClick={() => setSecuritySection(securitySection === 'logs' ? null : 'logs')}
+                    className="w-full flex items-center gap-4 p-4 text-left transition-all hover:bg-muted/10">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                      style={{ background: 'rgba(30,144,255,0.1)', border: '1px solid rgba(30,144,255,0.2)' }}>📋</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">Journaux d'activité</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">12 connexions ce mois-ci</p>
+                    </div>
+                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${securitySection === 'logs' ? 'rotate-90' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {securitySection === 'logs' && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden">
+                        <div className="px-4 pb-4 space-y-2">
+                          {[
+                            { action: 'Connexion réussie', ip: '192.168.1.45', time: 'Aujourd\'hui, 09:32', status: 'success' },
+                            { action: 'Connexion réussie', ip: '192.168.1.45', time: 'Hier, 14:15', status: 'success' },
+                            { action: 'Mot de passe modifié', ip: '192.168.1.45', time: 'Il y a 3 jours', status: 'warning' },
+                            { action: 'Connexion échouée', ip: '85.120.43.12', time: 'Il y a 5 jours', status: 'error' },
+                            { action: 'Connexion réussie', ip: '192.168.1.45', time: 'Il y a 7 jours', status: 'success' },
+                            { action: 'Nouvelle session mobile', ip: '10.0.0.3', time: 'Il y a 10 jours', status: 'success' },
+                          ].map((log, i) => (
+                            <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                              className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(14,20,32,0.4)', border: '1px solid rgba(30,144,255,0.05)' }}>
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${log.status === 'success' ? 'bg-green-500' : log.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-foreground">{log.action}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono">{log.ip} · {log.time}</p>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Trusted Devices */}
+                <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(14,20,32,0.5)', border: '1px solid rgba(30,144,255,0.08)' }}>
+                  <button onClick={() => setSecuritySection(securitySection === 'devices' ? null : 'devices')}
+                    className="w-full flex items-center gap-4 p-4 text-left transition-all hover:bg-muted/10">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                      style={{ background: 'rgba(30,144,255,0.1)', border: '1px solid rgba(30,144,255,0.2)' }}>🖥️</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">Appareils de confiance</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">2 appareils enregistrés</p>
+                    </div>
+                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${securitySection === 'devices' ? 'rotate-90' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {securitySection === 'devices' && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden">
+                        <div className="px-4 pb-4 space-y-2">
+                          {[
+                            { name: 'Chrome · Windows 11', location: 'Casablanca, MA', lastUsed: 'Maintenant', current: true, icon: Monitor },
+                            { name: 'Safari · iPhone 15', location: 'Rabat, MA', lastUsed: 'Il y a 2 heures', current: false, icon: Smartphone },
+                          ].map((device, i) => (
+                            <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{
+                              background: device.current ? 'rgba(30,144,255,0.06)' : 'rgba(14,20,32,0.4)',
+                              border: `1px solid ${device.current ? 'rgba(30,144,255,0.15)' : 'rgba(30,144,255,0.05)'}`
+                            }}>
+                              <device.icon className="h-5 w-5 text-primary flex-shrink-0" />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs font-medium text-foreground">{device.name}</p>
+                                  {device.current && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono" style={{ background: 'rgba(40,199,111,0.15)', color: '#28c76f', border: '1px solid rgba(40,199,111,0.3)' }}>
+                                      Actuel
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">{device.location} · {device.lastUsed}</p>
+                              </div>
+                              {!device.current && (
+                                <button onClick={() => toast({ title: 'Appareil retiré', description: `${device.name} a été retiré de la liste.` })}
+                                  className="p-1.5 rounded-lg transition-all" style={{ color: '#ef4444', background: 'rgba(239,68,68,0.05)' }}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
           </motion.div>
