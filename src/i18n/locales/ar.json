@@ -37,6 +37,17 @@
     "skillMatrix": "مصفوفة المهارات",
     "experimentSim": "المحاكي",
     "aiReports": "تقارير الذكاء الاصطناعي",
+    "eco": "الصيانة البيئية",
+    "contracts": "العقود",
+    "downtime": "وقت التوقف",
+    "budget": "الميزانية",
+    "riskMatrix": "مصفوفة المخاطر",
+    "qrInventory": "مخزون QR",
+    "photoEvidence": "الصور",
+    "maturityScore": "النضج",
+    "auditLogs": "سجلات التدقيق",
+    "userManagement": "المستخدمون",
+    "enterprise": "المؤسسة",
     "reduce": "طي"
   },
   "auth": {

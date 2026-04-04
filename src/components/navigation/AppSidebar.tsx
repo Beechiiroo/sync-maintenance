@@ -33,7 +33,7 @@ const AppSidebar = () => {
     { to: '/rapports', icon: BarChart3, label: t('nav.rapports') },
     { to: '/ia', icon: BrainCircuit, label: t('nav.ia') },
     { to: '/gamification', icon: Gamepad2, label: t('nav.gamification') },
-    { to: '/eco', icon: Leaf, label: 'Éco-Maintenance' },
+    { to: '/eco', icon: Leaf, label: t('nav.eco') },
   ];
 
   const navInnovation = [
@@ -64,15 +64,15 @@ const AppSidebar = () => {
   ];
 
   const navEnterprise = [
-    { to: '/contracts', icon: Handshake, label: 'Contrats' },
-    { to: '/downtime', icon: Timer, label: 'Downtime' },
-    { to: '/budget', icon: Wallet, label: 'Budget' },
-    { to: '/risk-matrix', icon: Target, label: 'Matrice RPN' },
-    { to: '/qr-inventory', icon: QrCode, label: 'QR Stock' },
-    { to: '/photo-evidence', icon: Camera, label: 'Photos' },
-    { to: '/maturity-score', icon: Gauge, label: 'Maturité' },
-    { to: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },
-    { to: '/user-management', icon: UserCog, label: 'Utilisateurs' },
+    { to: '/contracts', icon: Handshake, label: t('nav.contracts') },
+    { to: '/downtime', icon: Timer, label: t('nav.downtime') },
+    { to: '/budget', icon: Wallet, label: t('nav.budget') },
+    { to: '/risk-matrix', icon: Target, label: t('nav.riskMatrix') },
+    { to: '/qr-inventory', icon: QrCode, label: t('nav.qrInventory') },
+    { to: '/photo-evidence', icon: Camera, label: t('nav.photoEvidence') },
+    { to: '/maturity-score', icon: Gauge, label: t('nav.maturityScore') },
+    { to: '/audit-logs', icon: ScrollText, label: t('nav.auditLogs') },
+    { to: '/user-management', icon: UserCog, label: t('nav.userManagement') },
   ];
 
   const sections = [
@@ -80,7 +80,7 @@ const AppSidebar = () => {
     { key: 'analytics', label: t('nav.analytics'), items: navAnalytics },
     { key: 'innovation', label: t('nav.innovation'), items: navInnovation },
     { key: 'strategic', label: t('nav.strategic'), items: navStrategic },
-    { key: 'enterprise', label: 'Enterprise', items: navEnterprise },
+    { key: 'enterprise', label: t('nav.enterprise'), items: navEnterprise },
   ];
 
   return (

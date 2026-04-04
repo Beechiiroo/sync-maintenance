@@ -37,6 +37,17 @@
     "skillMatrix": "Matrice Compétences",
     "experimentSim": "Simulateur",
     "aiReports": "Rapports IA",
+    "eco": "Éco-Maintenance",
+    "contracts": "Contrats",
+    "downtime": "Downtime",
+    "budget": "Budget",
+    "riskMatrix": "Matrice RPN",
+    "qrInventory": "QR Stock",
+    "photoEvidence": "Photos",
+    "maturityScore": "Maturité",
+    "auditLogs": "Audit Logs",
+    "userManagement": "Utilisateurs",
+    "enterprise": "Entreprise",
     "reduce": "Réduire"
   },
   "auth": {
