@@ -150,11 +150,17 @@ const Equipements3D = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* 3D Canvas */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="lg:col-span-3 glass-card overflow-hidden" style={{ height: 500 }}>
-          <Canvas shadows camera={{ position: [8, 6, 8], fov: 50 }}>
-            <Suspense fallback={null}>
-              <Scene selectedId={selectedId} onSelect={setSelectedId} />
-            </Suspense>
-          </Canvas>
+          {detectWebGL() ? (
+            <WebGLErrorBoundary fallback={<Fallback2D equipments={equipments3D} selectedId={selectedId} onSelect={setSelectedId} />}>
+              <Canvas shadows camera={{ position: [8, 6, 8], fov: 50 }}>
+                <Suspense fallback={null}>
+                  <Scene selectedId={selectedId} onSelect={setSelectedId} />
+                </Suspense>
+              </Canvas>
+            </WebGLErrorBoundary>
+          ) : (
+            <Fallback2D equipments={equipments3D} selectedId={selectedId} onSelect={setSelectedId} />
+          )}
         </motion.div>
 
         {/* Side Panel */}
