@@ -1,98 +1,147 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Filter, Calendar, User, Clock, AlertTriangle, CheckCircle2, Loader2, X, Wrench, MessageSquare } from 'lucide-react';
+import { Plus, Calendar, User, Clock, AlertTriangle, CheckCircle2, Loader2, X, Wrench, MessageSquare } from 'lucide-react';
 import StatusBadge from '@/components/common/StatusBadge';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-type Priority = 'basse' | 'moyenne' | 'critique';
-type InterventionStatus = 'planifiée' | 'en_cours' | 'terminée';
+type Priority = 'low' | 'medium' | 'high' | 'critical';
+type InterventionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
 
 interface Intervention {
   id: string;
   title: string;
   equipment: string;
+  equipmentId: string | null;
   priority: Priority;
   status: InterventionStatus;
   technician: string;
   date: string;
   duration?: string;
   description?: string;
-  comments?: number;
 }
 
-const initialInterventions: Intervention[] = [
-  { id: 'OT-2026-101', title: 'Remplacement roulement moteur', equipment: 'Compresseur Atlas CP-200', priority: 'critique', status: 'en_cours', technician: 'Mohamed B.', date: '14/07/2026', duration: '3h est.', description: 'Roulement droit défaillant — bruit anormal détecté.', comments: 3 },
-  { id: 'OT-2026-100', title: 'Vidange huile hydraulique', equipment: 'Pompe hydraulique PH-15', priority: 'moyenne', status: 'planifiée', technician: 'Karim L.', date: '15/07/2026', description: 'Vidange trimestrielle programmée.', comments: 1 },
-  { id: 'OT-2026-099', title: 'Calibrage capteur température', equipment: 'Chaudière industrielle CH-01', priority: 'basse', status: 'planifiée', technician: 'Amine T.', date: '16/07/2026', comments: 0 },
-  { id: 'OT-2026-098', title: 'Réparation courroie transporteur', equipment: 'Convoyeur à bande C-300', priority: 'critique', status: 'en_cours', technician: 'Youssef M.', date: '14/07/2026', duration: '5h est.', comments: 5 },
-  { id: 'OT-2026-097', title: 'Maintenance préventive trimestrielle', equipment: 'Tour CNC TC-500', priority: 'moyenne', status: 'terminée', technician: 'Rachid K.', date: '13/07/2026', duration: '2h', comments: 2 },
-  { id: 'OT-2026-096', title: 'Remplacement filtre air', equipment: 'Compresseur Atlas CP-200', priority: 'basse', status: 'terminée', technician: 'Mohamed B.', date: '12/07/2026', duration: '45min', comments: 0 },
-];
-
 const priorityConfig: Record<Priority, { color: string; bg: string; label: string }> = {
-  critique: { color: 'text-destructive', bg: 'bg-destructive/10', label: 'Critique' },
-  moyenne: { color: 'text-warning', bg: 'bg-warning/10', label: 'Moyenne' },
-  basse: { color: 'text-success', bg: 'bg-success/10', label: 'Basse' },
+  critical: { color: 'text-destructive', bg: 'bg-destructive/10', label: 'Critique' },
+  high: { color: 'text-warning', bg: 'bg-warning/10', label: 'Haute' },
+  medium: { color: 'text-info', bg: 'bg-info/10', label: 'Moyenne' },
+  low: { color: 'text-success', bg: 'bg-success/10', label: 'Basse' },
 };
 
 const statusIcons: Record<InterventionStatus, React.ReactNode> = {
-  planifiée: <Calendar className="h-4 w-4 text-info" />,
-  en_cours: <Loader2 className="h-4 w-4 text-warning animate-spin" />,
-  terminée: <CheckCircle2 className="h-4 w-4 text-success" />,
+  planned: <Calendar className="h-4 w-4 text-info" />,
+  in_progress: <Loader2 className="h-4 w-4 text-warning animate-spin" />,
+  completed: <CheckCircle2 className="h-4 w-4 text-success" />,
+  cancelled: <X className="h-4 w-4 text-muted-foreground" />,
 };
 
-const statusBadgeMap: Record<InterventionStatus, 'maintenance' | 'warning' | 'operational'> = {
-  planifiée: 'maintenance',
-  en_cours: 'warning',
-  terminée: 'operational',
+const statusBadgeMap: Record<InterventionStatus, 'maintenance' | 'warning' | 'operational' | 'critical'> = {
+  planned: 'maintenance',
+  in_progress: 'warning',
+  completed: 'operational',
+  cancelled: 'critical',
 };
 
 const statusLabels: Record<InterventionStatus, string> = {
-  planifiée: 'Planifiée',
-  en_cours: 'En cours',
-  terminée: 'Terminée',
+  planned: 'Planifiée',
+  in_progress: 'En cours',
+  completed: 'Terminée',
+  cancelled: 'Annulée',
 };
 
-const technicians = ['Mohamed B.', 'Karim L.', 'Amine T.', 'Youssef M.', 'Rachid K.'];
-const equipmentList = ['Compresseur Atlas CP-200', 'Pompe hydraulique PH-15', 'Tour CNC TC-500', 'Convoyeur à bande C-300', 'Chaudière industrielle CH-01', 'Robot soudeur RS-50'];
-
 const Interventions = () => {
-  const [interventions, setInterventions] = useState(initialInterventions);
+  const { toast } = useToast();
+  const [interventions, setInterventions] = useState<Intervention[]>([]);
+  const [equipmentList, setEquipmentList] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<InterventionStatus | 'all'>('all');
   const [showModal, setShowModal] = useState(false);
   const [selectedIntervention, setSelectedIntervention] = useState<Intervention | null>(null);
-  const [form, setForm] = useState({ title: '', equipment: equipmentList[0], priority: 'moyenne' as Priority, technician: technicians[0], date: '', description: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ title: '', equipmentId: '', priority: 'medium' as Priority, date: '', description: '' });
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [intRes, eqRes] = await Promise.all([
+      supabase.from('interventions').select('*, equipment(name)').order('created_at', { ascending: false }),
+      supabase.from('equipment').select('id, name').order('name'),
+    ]);
+
+    if (eqRes.data) setEquipmentList(eqRes.data);
+
+    if (intRes.data) {
+      setInterventions(intRes.data.map((i: any) => ({
+        id: i.id.substring(0, 8).toUpperCase(),
+        _dbId: i.id,
+        title: i.title,
+        equipment: i.equipment?.name || 'Non assigné',
+        equipmentId: i.equipment_id,
+        priority: i.priority as Priority,
+        status: i.status as InterventionStatus,
+        technician: i.assigned_to ? i.assigned_to.substring(0, 8) : 'Non assigné',
+        date: i.scheduled_date ? new Date(i.scheduled_date).toLocaleDateString('fr-FR') : '-',
+        duration: i.duration_minutes ? `${i.duration_minutes}min` : undefined,
+        description: i.description ?? undefined,
+      })));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const filtered = activeTab === 'all' ? interventions : interventions.filter((i) => i.status === activeTab);
 
   const stats = {
     total: interventions.length,
-    en_cours: interventions.filter(i => i.status === 'en_cours').length,
-    planifiée: interventions.filter(i => i.status === 'planifiée').length,
-    terminée: interventions.filter(i => i.status === 'terminée').length,
+    in_progress: interventions.filter(i => i.status === 'in_progress').length,
+    planned: interventions.filter(i => i.status === 'planned').length,
+    completed: interventions.filter(i => i.status === 'completed').length,
   };
 
-  const handleCreate = () => {
-    if (!form.title || !form.date) return;
-    const newId = `OT-2026-${102 + interventions.length}`;
-    setInterventions(prev => [{
-      id: newId,
+  const handleCreate = async () => {
+    if (!form.title || !form.date) {
+      toast({ title: 'Erreur', description: 'Le titre et la date sont requis.', variant: 'destructive' });
+      return;
+    }
+    setSubmitting(true);
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    const { error } = await supabase.from('interventions').insert({
       title: form.title,
-      equipment: form.equipment,
+      equipment_id: form.equipmentId || null,
       priority: form.priority,
-      status: 'planifiée',
-      technician: form.technician,
-      date: form.date,
-      description: form.description,
-      comments: 0,
-    }, ...prev]);
+      scheduled_date: form.date,
+      description: form.description || null,
+      created_by: userData?.user?.id || null,
+      status: 'planned',
+      type: 'corrective',
+    });
+
+    setSubmitting(false);
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+      return;
+    }
+
     setShowModal(false);
-    setForm({ title: '', equipment: equipmentList[0], priority: 'moyenne', technician: technicians[0], date: '', description: '' });
+    setForm({ title: '', equipmentId: '', priority: 'medium', date: '', description: '' });
+    toast({ title: 'Intervention créée', description: `${form.title} a été planifiée.` });
+    fetchData();
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Chargement des interventions...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Interventions</h1>
@@ -107,9 +156,9 @@ const Interventions = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total', value: stats.total, color: 'text-foreground', bg: 'bg-muted/50' },
-          { label: 'En cours', value: stats.en_cours, color: 'text-warning', bg: 'bg-warning/10' },
-          { label: 'Planifiées', value: stats.planifiée, color: 'text-info', bg: 'bg-info/10' },
-          { label: 'Terminées', value: stats.terminée, color: 'text-success', bg: 'bg-success/10' },
+          { label: 'En cours', value: stats.in_progress, color: 'text-warning', bg: 'bg-warning/10' },
+          { label: 'Planifiées', value: stats.planned, color: 'text-info', bg: 'bg-info/10' },
+          { label: 'Terminées', value: stats.completed, color: 'text-success', bg: 'bg-success/10' },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className={cn("rounded-xl p-3 text-center", s.bg)}>
             <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
@@ -120,7 +169,7 @@ const Interventions = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
-        {(['all', 'planifiée', 'en_cours', 'terminée'] as const).map((tab) => (
+        {(['all', 'planned', 'in_progress', 'completed'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -133,6 +182,14 @@ const Interventions = () => {
           </button>
         ))}
       </div>
+
+      {/* Empty state */}
+      {filtered.length === 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-12 text-center">
+          <Wrench className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Aucune intervention trouvée</p>
+        </motion.div>
+      )}
 
       {/* Cards */}
       <div className="grid gap-3">
@@ -152,7 +209,7 @@ const Interventions = () => {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 flex-1 min-w-0">
                   <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", priorityConfig[item.priority].bg)}>
-                    {item.priority === 'critique' ? <AlertTriangle className={cn("h-5 w-5", priorityConfig[item.priority].color)} /> : statusIcons[item.status]}
+                    {item.priority === 'critical' ? <AlertTriangle className={cn("h-5 w-5", priorityConfig[item.priority].color)} /> : statusIcons[item.status]}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -169,14 +226,8 @@ const Interventions = () => {
                 <div className="text-right shrink-0">
                   <StatusBadge status={statusBadgeMap[item.status]} label={statusLabels[item.status]} />
                   <div className="flex items-center justify-end gap-3 mt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><User className="h-3 w-3" />{item.technician}</span>
                     <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.date}</span>
                   </div>
-                  {(item.comments ?? 0) > 0 && (
-                    <div className="flex items-center justify-end gap-1 mt-1 text-xs text-muted-foreground">
-                      <MessageSquare className="h-3 w-3" /> {item.comments}
-                    </div>
-                  )}
                 </div>
               </div>
             </motion.div>
@@ -209,9 +260,10 @@ const Interventions = () => {
                   <div>
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Priorité</label>
                     <select value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value as Priority }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                      <option value="basse">Basse</option>
-                      <option value="moyenne">Moyenne</option>
-                      <option value="critique">Critique</option>
+                      <option value="low">Basse</option>
+                      <option value="medium">Moyenne</option>
+                      <option value="high">Haute</option>
+                      <option value="critical">Critique</option>
                     </select>
                   </div>
                   <div>
@@ -221,14 +273,9 @@ const Interventions = () => {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Équipement</label>
-                  <select value={form.equipment} onChange={e => setForm(p => ({ ...p, equipment: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    {equipmentList.map(eq => <option key={eq}>{eq}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 block">Technicien assigné</label>
-                  <select value={form.technician} onChange={e => setForm(p => ({ ...p, technician: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    {technicians.map(t => <option key={t}>{t}</option>)}
+                  <select value={form.equipmentId} onChange={e => setForm(p => ({ ...p, equipmentId: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">-- Sélectionner --</option>
+                    {equipmentList.map(eq => <option key={eq.id} value={eq.id}>{eq.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -237,8 +284,9 @@ const Interventions = () => {
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setShowModal(false)} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">Annuler</button>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleCreate} className="flex-1 h-10 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25">
-                    Créer l'OT
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleCreate} disabled={submitting}
+                    className="flex-1 h-10 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 disabled:opacity-50">
+                    {submitting ? 'Création...' : "Créer l'OT"}
                   </motion.button>
                 </div>
               </div>
@@ -264,7 +312,6 @@ const Interventions = () => {
               <div className="space-y-3">
                 {[
                   { label: 'Équipement', value: selectedIntervention.equipment },
-                  { label: 'Technicien', value: selectedIntervention.technician },
                   { label: 'Date', value: selectedIntervention.date },
                   { label: 'Durée estimée', value: selectedIntervention.duration || 'Non définie' },
                   { label: 'Priorité', value: priorityConfig[selectedIntervention.priority].label },
