@@ -125,8 +125,36 @@ const Scene = ({ selectedId, onSelect }: { selectedId: string | null; onSelect: 
     <OrbitControls makeDefault minPolarAngle={0.3} maxPolarAngle={Math.PI / 2.2} minDistance={5} maxDistance={18} />
   </>
 );
+const Fallback2D = ({ equipments, selectedId, onSelect }: { equipments: Equipment3D[]; selectedId: string | null; onSelect: (id: string) => void }) => (
+  <div className="relative w-full h-full bg-muted/30 flex flex-col items-center justify-center p-6">
+    <div className="flex items-center gap-2 text-muted-foreground mb-4">
+      <Monitor className="h-5 w-5" />
+      <span className="text-sm font-medium">Vue 2D — WebGL non disponible</span>
+    </div>
+    <div className="relative w-full max-w-lg aspect-square">
+      <div className="absolute inset-0 border-2 border-dashed border-border rounded-xl" />
+      {equipments.map((eq) => {
+        const x = ((eq.position[0] + 6) / 12) * 100;
+        const y = ((eq.position[2] + 5) / 10) * 100;
+        return (
+          <motion.button
+            key={eq.id}
+            whileHover={{ scale: 1.2 }}
+            onClick={() => onSelect(eq.id)}
+            className={cn("absolute w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shadow-lg -translate-x-1/2 -translate-y-1/2 border-2", selectedId === eq.id ? 'border-foreground ring-2 ring-primary' : 'border-transparent')}
+            style={{ left: `${x}%`, top: `${y}%`, backgroundColor: statusColors[eq.status] }}
+            title={eq.name}
+          >
+            {eq.health}
+          </motion.button>
+        );
+      })}
+    </div>
+    <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Ouvrez dans un navigateur avec GPU pour la vue 3D</p>
+  </div>
+);
 
-const Equipements3D = () => {
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = equipments3D.find(e => e.id === selectedId);
 
