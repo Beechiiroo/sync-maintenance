@@ -154,7 +154,7 @@ const Fallback2D = ({ equipments, selectedId, onSelect }: { equipments: Equipmen
   </div>
 );
 
-
+const Equipements3D = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = equipments3D.find(e => e.id === selectedId);
 
