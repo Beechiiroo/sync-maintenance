@@ -86,6 +86,14 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (commandCenter) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+      document.fullscreenElement && document.exitFullscreen?.().catch(() => {});
+    }
+  }, [commandCenter]);
+
+  useEffect(() => {
     const fetchStats = async () => {
       try {
         const [eqRes, intRes, spRes] = await Promise.all([
@@ -161,14 +169,6 @@ const Dashboard = () => {
     : 0;
   const corrRatio = 100 - prevRatio;
   const liveAlerts = s.critical + s.lowStockCount;
-
-  useEffect(() => {
-    if (commandCenter) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
-    } else {
-      document.fullscreenElement && document.exitFullscreen?.().catch(() => {});
-    }
-  }, [commandCenter]);
 
   return (
     <div className={`space-y-6 ${commandCenter ? 'fixed inset-0 z-50 bg-background overflow-auto p-6' : ''}`}>
