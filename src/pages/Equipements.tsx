@@ -1,11 +1,12 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download, ImageIcon } from 'lucide-react';
+import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download, ImageIcon, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import StatusBadge from '@/components/common/StatusBadge';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 type EquipmentStatus = 'operational' | 'maintenance' | 'critical' | 'warning';
 
@@ -26,26 +27,21 @@ interface Equipment {
 
 const PLACEHOLDER_IMG = '/placeholder.svg';
 
-const initialEquipments: Equipment[] = [
-  { id: 'EQ-001', name: 'Compresseur Atlas CP-200', category: 'Pneumatique', location: 'Atelier A', status: 'operational', lastMaintenance: '12/06/2026', nextMaintenance: '12/07/2026', mtbf: '240h', healthScore: 72, serialNumber: 'ATL-20-2024', manufacturer: 'Atlas Copco', imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&h=200&fit=crop' },
-  { id: 'EQ-002', name: 'Pompe hydraulique PH-15', category: 'Hydraulique', location: 'Atelier B', status: 'maintenance', lastMaintenance: '01/07/2026', nextMaintenance: '15/07/2026', mtbf: '180h', healthScore: 55, serialNumber: 'PH-15-2023', manufacturer: 'Bosch Rexroth', imageUrl: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=200&h=200&fit=crop' },
-  { id: 'EQ-003', name: 'Tour CNC TC-500', category: 'Usinage', location: 'Atelier C', status: 'operational', lastMaintenance: '20/06/2026', nextMaintenance: '20/07/2026', mtbf: '320h', healthScore: 91, serialNumber: 'TC-500-2022', manufacturer: 'Mazak', imageUrl: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=200&h=200&fit=crop' },
-  { id: 'EQ-004', name: 'Convoyeur à bande C-300', category: 'Manutention', location: 'Zone de stockage', status: 'critical', lastMaintenance: '05/07/2026', nextMaintenance: '-', mtbf: '95h', healthScore: 28, serialNumber: 'CB-300-2021', manufacturer: 'Daifuku' },
-  { id: 'EQ-005', name: 'Chaudière industrielle CH-01', category: 'Thermique', location: 'Salle énergie', status: 'operational', lastMaintenance: '28/06/2026', nextMaintenance: '28/07/2026', mtbf: '400h', healthScore: 88, serialNumber: 'CH-01-2020', manufacturer: 'Viessmann', imageUrl: 'https://images.unsplash.com/photo-1513828583688-c52646db42da?w=200&h=200&fit=crop' },
-  { id: 'EQ-006', name: 'Robot soudeur RS-50', category: 'Robotique', location: 'Atelier D', status: 'warning', lastMaintenance: '10/07/2026', nextMaintenance: '12/07/2026', mtbf: '150h', healthScore: 35, serialNumber: 'RS-50-2023', manufacturer: 'KUKA' },
-  { id: 'EQ-007', name: 'Fraiseuse FM-120', category: 'Usinage', location: 'Atelier C', status: 'operational', lastMaintenance: '15/06/2026', nextMaintenance: '15/07/2026', mtbf: '280h', healthScore: 83, serialNumber: 'FM-120-2022', manufacturer: 'Hurco' },
-  { id: 'EQ-008', name: 'Groupe électrogène GE-500', category: 'Énergie', location: 'Salle énergie', status: 'operational', lastMaintenance: '01/07/2026', nextMaintenance: '01/08/2026', mtbf: '500h', healthScore: 95, serialNumber: 'GE-500-2019', manufacturer: 'Caterpillar', imageUrl: 'https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?w=200&h=200&fit=crop' },
-];
-
-const categories = ['Pneumatique', 'Hydraulique', 'Usinage', 'Manutention', 'Thermique', 'Robotique', 'Énergie'];
+const categories = ['Pneumatique', 'Hydraulique', 'Usinage', 'Manutention', 'Thermique', 'Robotique', 'Énergie', 'general'];
 const locations = ['Atelier A', 'Atelier B', 'Atelier C', 'Atelier D', 'Zone de stockage', 'Salle énergie'];
 
 const healthColor = (score: number) => score >= 80 ? 'text-success' : score >= 50 ? 'text-warning' : 'text-destructive';
 const healthBg = (score: number) => score >= 80 ? 'bg-success' : score >= 50 ? 'bg-warning' : 'bg-destructive';
 
+const formatDate = (d: string | null) => {
+  if (!d) return '-';
+  return new Date(d).toLocaleDateString('fr-FR');
+};
+
 const Equipements = () => {
   const { toast } = useToast();
-  const [equipments, setEquipments] = useState(initialEquipments);
+  const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -61,6 +57,41 @@ const Equipements = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ name: '', category: categories[0], location: locations[0], status: 'operational' as EquipmentStatus, manufacturer: '', serialNumber: '', imageUrl: '' });
 
+  const fetchEquipments = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('equipment')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({ title: 'Erreur', description: 'Impossible de charger les équipements.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
+    const mapped: Equipment[] = (data || []).map(eq => ({
+      id: eq.id.substring(0, 8).toUpperCase(),
+      dbId: eq.id,
+      name: eq.name,
+      category: eq.category,
+      location: eq.location,
+      status: eq.status as EquipmentStatus,
+      lastMaintenance: formatDate(eq.last_maintenance),
+      nextMaintenance: formatDate(eq.next_maintenance),
+      mtbf: eq.mtbf_hours ? `${eq.mtbf_hours}h` : '-',
+      healthScore: eq.health_score ?? 100,
+      serialNumber: eq.serial_number ?? undefined,
+      manufacturer: eq.manufacturer ?? undefined,
+      imageUrl: eq.image_url ?? undefined,
+      _dbId: eq.id,
+    }));
+    setEquipments(mapped);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchEquipments(); }, []);
+
   const filtered = equipments.filter((eq) => {
     const matchSearch = eq.name.toLowerCase().includes(search.toLowerCase()) || eq.id.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filterStatus === 'all' || eq.status === filterStatus;
@@ -74,25 +105,37 @@ const Equipements = () => {
     critical: equipments.filter(e => e.status === 'critical').length,
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.name.trim()) {
       toast({ title: 'Erreur', description: 'Le nom de l\'équipement est requis.', variant: 'destructive' });
       return;
     }
     setSubmitting(true);
-    const newId = `EQ-${String(equipments.length + 1).padStart(3, '0')}`;
-    setTimeout(() => {
-      setEquipments(prev => [...prev, {
-        id: newId, name: form.name, category: form.category, location: form.location, status: form.status,
-        lastMaintenance: new Date().toLocaleDateString('fr-FR'), nextMaintenance: '-', mtbf: '-',
-        healthScore: form.status === 'operational' ? 90 : form.status === 'warning' ? 55 : form.status === 'critical' ? 25 : 45,
-        serialNumber: form.serialNumber, manufacturer: form.manufacturer, imageUrl: form.imageUrl || undefined,
-      }]);
-      setShowAddModal(false);
-      setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '', imageUrl: '' });
-      setSubmitting(false);
-      toast({ title: 'Équipement ajouté', description: `${form.name} a été ajouté avec succès.` });
-    }, 400);
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    const { error } = await supabase.from('equipment').insert({
+      name: form.name,
+      category: form.category,
+      location: form.location,
+      status: form.status,
+      manufacturer: form.manufacturer || null,
+      serial_number: form.serialNumber || null,
+      image_url: form.imageUrl || null,
+      health_score: form.status === 'operational' ? 90 : form.status === 'warning' ? 55 : form.status === 'critical' ? 25 : 45,
+      created_by: userData?.user?.id || null,
+    });
+
+    setSubmitting(false);
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    setShowAddModal(false);
+    setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '', imageUrl: '' });
+    toast({ title: 'Équipement ajouté', description: `${form.name} a été ajouté avec succès.` });
+    fetchEquipments();
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,6 +174,15 @@ const Equipements = () => {
     if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
     setShowScanner(false);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Chargement des équipements...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -267,14 +319,10 @@ const Equipements = () => {
                 <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
               </div>
               <div className="space-y-3">
-                {/* Image upload */}
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground mb-1 block">Photo de l'équipement</label>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-28 rounded-lg border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors overflow-hidden"
-                  >
+                  <div onClick={() => fileInputRef.current?.click()} className="w-full h-28 rounded-lg border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors overflow-hidden">
                     {form.imageUrl ? (
                       <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
