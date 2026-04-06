@@ -1,9 +1,23 @@
-import { useState, useRef, Suspense } from 'react';
+import { useState, useRef, Suspense, useEffect, Component, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import * as THREE from 'three';
+import { AlertTriangle, Monitor } from 'lucide-react';
+
+function detectWebGL(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+  } catch { return false; }
+}
+
+class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() { return this.state.hasError ? this.props.fallback : this.props.children; }
+}
 
 type EquipmentStatus = 'operational' | 'maintenance' | 'critical';
 
@@ -111,6 +125,34 @@ const Scene = ({ selectedId, onSelect }: { selectedId: string | null; onSelect: 
     <OrbitControls makeDefault minPolarAngle={0.3} maxPolarAngle={Math.PI / 2.2} minDistance={5} maxDistance={18} />
   </>
 );
+const Fallback2D = ({ equipments, selectedId, onSelect }: { equipments: Equipment3D[]; selectedId: string | null; onSelect: (id: string) => void }) => (
+  <div className="relative w-full h-full bg-muted/30 flex flex-col items-center justify-center p-6">
+    <div className="flex items-center gap-2 text-muted-foreground mb-4">
+      <Monitor className="h-5 w-5" />
+      <span className="text-sm font-medium">Vue 2D — WebGL non disponible</span>
+    </div>
+    <div className="relative w-full max-w-lg aspect-square">
+      <div className="absolute inset-0 border-2 border-dashed border-border rounded-xl" />
+      {equipments.map((eq) => {
+        const x = ((eq.position[0] + 6) / 12) * 100;
+        const y = ((eq.position[2] + 5) / 10) * 100;
+        return (
+          <motion.button
+            key={eq.id}
+            whileHover={{ scale: 1.2 }}
+            onClick={() => onSelect(eq.id)}
+            className={cn("absolute w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shadow-lg -translate-x-1/2 -translate-y-1/2 border-2", selectedId === eq.id ? 'border-foreground ring-2 ring-primary' : 'border-transparent')}
+            style={{ left: `${x}%`, top: `${y}%`, backgroundColor: statusColors[eq.status] }}
+            title={eq.name}
+          >
+            {eq.health}
+          </motion.button>
+        );
+      })}
+    </div>
+    <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Ouvrez dans un navigateur avec GPU pour la vue 3D</p>
+  </div>
+);
 
 const Equipements3D = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -136,11 +178,17 @@ const Equipements3D = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* 3D Canvas */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="lg:col-span-3 glass-card overflow-hidden" style={{ height: 500 }}>
-          <Canvas shadows camera={{ position: [8, 6, 8], fov: 50 }}>
-            <Suspense fallback={null}>
-              <Scene selectedId={selectedId} onSelect={setSelectedId} />
-            </Suspense>
-          </Canvas>
+          {detectWebGL() ? (
+            <WebGLErrorBoundary fallback={<Fallback2D equipments={equipments3D} selectedId={selectedId} onSelect={setSelectedId} />}>
+              <Canvas shadows camera={{ position: [8, 6, 8], fov: 50 }}>
+                <Suspense fallback={null}>
+                  <Scene selectedId={selectedId} onSelect={setSelectedId} />
+                </Suspense>
+              </Canvas>
+            </WebGLErrorBoundary>
+          ) : (
+            <Fallback2D equipments={equipments3D} selectedId={selectedId} onSelect={setSelectedId} />
+          )}
         </motion.div>
 
         {/* Side Panel */}
