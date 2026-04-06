@@ -1,9 +1,23 @@
-import { useState, useRef, Suspense } from 'react';
+import { useState, useRef, Suspense, useEffect, Component, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import * as THREE from 'three';
+import { AlertTriangle, Monitor } from 'lucide-react';
+
+function detectWebGL(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+  } catch { return false; }
+}
+
+class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() { return this.state.hasError ? this.props.fallback : this.props.children; }
+}
 
 type EquipmentStatus = 'operational' | 'maintenance' | 'critical';
 
