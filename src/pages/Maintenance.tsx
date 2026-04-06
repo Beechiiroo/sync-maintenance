@@ -1,61 +1,135 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarClock, CheckCircle2, Clock, AlertCircle, Plus, X, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Clock, AlertCircle, Plus, X, Zap, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-const initialSchedules = [
-  { id: 1, equipment: 'Compresseur Atlas CP-200', task: 'Vidange + filtre', frequency: 'Mensuel', nextDate: '12/07/2026', daysLeft: 2, status: 'urgent' as const },
-  { id: 2, equipment: 'Tour CNC TC-500', task: 'Lubrification guides', frequency: 'Hebdomadaire', nextDate: '18/07/2026', daysLeft: 8, status: 'ok' as const },
-  { id: 3, equipment: 'Pompe hydraulique PH-15', task: 'Contrôle pression', frequency: 'Bi-mensuel', nextDate: '15/07/2026', daysLeft: 5, status: 'upcoming' as const },
-  { id: 4, equipment: 'Chaudière CH-01', task: 'Inspection sécurité', frequency: 'Trimestriel', nextDate: '28/07/2026', daysLeft: 18, status: 'ok' as const },
-  { id: 5, equipment: 'Convoyeur C-300', task: 'Tension courroie', frequency: 'Mensuel', nextDate: '20/07/2026', daysLeft: 10, status: 'ok' as const },
-  { id: 6, equipment: 'Robot soudeur RS-50', task: 'Calibrage bras', frequency: 'Mensuel', nextDate: '14/07/2026', daysLeft: 4, status: 'upcoming' as const },
-];
+interface Schedule {
+  id: string;
+  equipment_name: string;
+  equipment_id: string;
+  task: string;
+  frequency: string;
+  next_due: string;
+  daysLeft: number;
+  status: 'urgent' | 'upcoming' | 'ok' | 'overdue';
+  last_performed: string | null;
+}
 
-const calendarEvents: Record<number, { title: string; color: string }[]> = {
-  12: [{ title: 'CP-200 Vidange', color: 'bg-destructive/80' }],
-  14: [{ title: 'RS-50 Calibrage', color: 'bg-warning/80' }],
-  15: [{ title: 'PH-15 Pression', color: 'bg-info/80' }],
-  18: [{ title: 'TC-500 Lubri.', color: 'bg-success/80' }],
-  20: [{ title: 'C-300 Courroie', color: 'bg-primary/80' }],
-  28: [{ title: 'CH-01 Inspec.', color: 'bg-success/80' }],
+const freqMap: Record<string, string> = {
+  daily: 'Quotidien', weekly: 'Hebdomadaire', biweekly: 'Bi-mensuel',
+  monthly: 'Mensuel', quarterly: 'Trimestriel', semi_annual: 'Semestriel', annual: 'Annuel',
+};
+const freqReverseMap: Record<string, string> = {
+  Quotidien: 'daily', Hebdomadaire: 'weekly', 'Bi-mensuel': 'biweekly',
+  Mensuel: 'monthly', Trimestriel: 'quarterly', Semestriel: 'semi_annual', Annuel: 'annual',
 };
 
+function computeStatus(daysLeft: number): Schedule['status'] {
+  if (daysLeft < 0) return 'overdue';
+  if (daysLeft <= 3) return 'urgent';
+  if (daysLeft <= 7) return 'upcoming';
+  return 'ok';
+}
+
 const Maintenance = () => {
-  const [schedules, setSchedules] = useState(initialSchedules);
+  const { toast } = useToast();
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [equipmentList, setEquipmentList] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [view, setView] = useState<'list' | 'calendar'>('list');
-  const [form, setForm] = useState({ equipment: '', task: '', frequency: 'Mensuel', nextDate: '' });
+  const [form, setForm] = useState({ equipment_id: '', task: '', frequency: 'Mensuel', nextDate: '' });
 
-  const handleAddSchedule = () => {
-    if (!form.equipment || !form.task || !form.nextDate) return;
-    const parts = form.nextDate.split('-');
-    const formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
-    const today = new Date();
-    const target = new Date(form.nextDate);
-    const daysLeft = Math.ceil((target.getTime() - today.getTime()) / 86400000);
-    setSchedules(prev => [...prev, {
-      id: Date.now(),
-      equipment: form.equipment,
-      task: form.task,
-      frequency: form.frequency,
-      nextDate: formatted,
-      daysLeft,
-      status: daysLeft <= 3 ? 'urgent' : daysLeft <= 7 ? 'upcoming' : 'ok',
-    }]);
-    setShowModal(false);
-    setForm({ equipment: '', task: '', frequency: 'Mensuel', nextDate: '' });
+  const fetchData = async () => {
+    try {
+      const [schedRes, eqRes] = await Promise.all([
+        supabase.from('maintenance_schedules').select('*, equipment(name)').order('next_due'),
+        supabase.from('equipment').select('id, name').order('name'),
+      ]);
+
+      setEquipmentList(eqRes.data || []);
+
+      const today = new Date();
+      const mapped: Schedule[] = (schedRes.data || []).map((s: any) => {
+        const due = new Date(s.next_due);
+        const daysLeft = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+        return {
+          id: s.id,
+          equipment_name: s.equipment?.name || 'Inconnu',
+          equipment_id: s.equipment_id,
+          task: s.task,
+          frequency: freqMap[s.frequency] || s.frequency,
+          next_due: s.next_due,
+          daysLeft,
+          status: computeStatus(daysLeft),
+          last_performed: s.last_performed,
+        };
+      });
+      setSchedules(mapped);
+    } catch {
+      toast({ title: 'Erreur', description: 'Impossible de charger les plannings', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const daysInJuly = Array.from({ length: 31 }, (_, i) => i + 1);
-  const startDay = 2; // July 2026 starts on Wednesday (0=Sun)
+  useEffect(() => { fetchData(); }, []);
+
+  const handleAddSchedule = async () => {
+    if (!form.equipment_id || !form.task || !form.nextDate) return;
+    const freq = freqReverseMap[form.frequency] || 'monthly';
+    const { error } = await supabase.from('maintenance_schedules').insert({
+      equipment_id: form.equipment_id,
+      task: form.task,
+      frequency: freq as any,
+      next_due: form.nextDate,
+      status: 'upcoming',
+    });
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: '✅ Planifié', description: 'Maintenance ajoutée avec succès' });
+    setShowModal(false);
+    setForm({ equipment_id: '', task: '', frequency: 'Mensuel', nextDate: '' });
+    fetchData();
+  };
+
+  const formatDate = (iso: string) => {
+    try { return new Date(iso).toLocaleDateString('fr-FR'); } catch { return iso; }
+  };
+
+  // Calendar data
+  const now = new Date();
+  const calendarMonth = now.getMonth();
+  const calendarYear = now.getFullYear();
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const startDay = (new Date(calendarYear, calendarMonth, 1).getDay() + 6) % 7;
+  const monthName = new Date(calendarYear, calendarMonth).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+  const calendarEvents: Record<number, { title: string; color: string }[]> = {};
+  schedules.forEach(s => {
+    const d = new Date(s.next_due);
+    if (d.getMonth() === calendarMonth && d.getFullYear() === calendarYear) {
+      const day = d.getDate();
+      if (!calendarEvents[day]) calendarEvents[day] = [];
+      const color = s.status === 'urgent' || s.status === 'overdue' ? 'bg-destructive/80' : s.status === 'upcoming' ? 'bg-warning/80' : 'bg-success/80';
+      calendarEvents[day].push({ title: `${s.equipment_name.substring(0, 10)} - ${s.task.substring(0, 12)}`, color });
+    }
+  });
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Maintenance préventive</h1>
-          <p className="text-sm text-muted-foreground">Planification et suivi · Juillet 2026</p>
+          <p className="text-sm text-muted-foreground">{schedules.length} planification(s) enregistrée(s)</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-muted rounded-lg p-1">
@@ -74,10 +148,10 @@ const Maintenance = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Planifiées ce mois', value: `${schedules.length}`, icon: CalendarClock, color: 'text-info', bg: 'bg-info/10' },
-          { label: 'Urgentes (≤3j)', value: `${schedules.filter(s => s.daysLeft <= 3).length}`, icon: AlertCircle, color: 'text-destructive', bg: 'bg-destructive/10' },
-          { label: 'Cette semaine', value: `${schedules.filter(s => s.daysLeft <= 7).length}`, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
-          { label: 'Taux de respect', value: '94%', icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
+          { label: 'Total planifiées', value: `${schedules.length}`, icon: CalendarClock, color: 'text-info', bg: 'bg-info/10' },
+          { label: 'Urgentes (≤3j)', value: `${schedules.filter(s => s.status === 'urgent' || s.status === 'overdue').length}`, icon: AlertCircle, color: 'text-destructive', bg: 'bg-destructive/10' },
+          { label: 'Cette semaine', value: `${schedules.filter(s => s.daysLeft >= 0 && s.daysLeft <= 7).length}`, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
+          { label: 'Réalisées', value: `${schedules.filter(s => s.last_performed).length}`, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
         ].map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} className={cn("glass-card p-4 flex items-center gap-3", stat.bg)}>
             <div className="w-10 h-10 rounded-xl bg-background/50 flex items-center justify-center">
@@ -102,54 +176,58 @@ const Maintenance = () => {
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success" />OK</span>
               </div>
             </div>
-            <div className="divide-y divide-border/50">
-              {schedules.map((s, i) => (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + i * 0.05 }}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors"
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.status === 'urgent' ? 'bg-destructive/10' : s.status === 'upcoming' ? 'bg-warning/10' : 'bg-success/10'}`}>
-                    {s.status === 'urgent'
-                      ? <AlertCircle className="h-4 w-4 text-destructive" />
-                      : s.status === 'upcoming'
-                      ? <Clock className="h-4 w-4 text-warning" />
-                      : <CheckCircle2 className="h-4 w-4 text-success" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{s.equipment}</p>
-                    <p className="text-xs text-muted-foreground">{s.task} · {s.frequency}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {s.status === 'urgent' && (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20"
-                      >
-                        <Zap className="h-3 w-3" /> Générer OT
-                      </motion.button>
-                    )}
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-foreground">{s.nextDate}</p>
-                      <p className={`text-xs font-semibold ${s.daysLeft <= 3 ? 'text-destructive' : s.daysLeft <= 7 ? 'text-warning' : 'text-muted-foreground'}`}>
-                        {s.daysLeft <= 0 ? 'En retard' : `Dans ${s.daysLeft}j`}
-                      </p>
+            {schedules.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <CalendarClock className="h-12 w-12 mb-3 opacity-30" />
+                <p className="text-sm">Aucune maintenance planifiée</p>
+                <button onClick={() => setShowModal(true)} className="mt-3 text-primary text-sm font-medium hover:underline">+ Ajouter une planification</button>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/50">
+                {schedules.map((s, i) => (
+                  <motion.div
+                    key={s.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
+                    className="flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.status === 'urgent' || s.status === 'overdue' ? 'bg-destructive/10' : s.status === 'upcoming' ? 'bg-warning/10' : 'bg-success/10'}`}>
+                      {s.status === 'urgent' || s.status === 'overdue'
+                        ? <AlertCircle className="h-4 w-4 text-destructive" />
+                        : s.status === 'upcoming'
+                        ? <Clock className="h-4 w-4 text-warning" />
+                        : <CheckCircle2 className="h-4 w-4 text-success" />}
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{s.equipment_name}</p>
+                      <p className="text-xs text-muted-foreground">{s.task} · {s.frequency}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {(s.status === 'urgent' || s.status === 'overdue') && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20"
+                        >
+                          <Zap className="h-3 w-3" /> Générer OT
+                        </motion.button>
+                      )}
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-foreground">{formatDate(s.next_due)}</p>
+                        <p className={`text-xs font-semibold ${s.daysLeft < 0 ? 'text-destructive' : s.daysLeft <= 3 ? 'text-destructive' : s.daysLeft <= 7 ? 'text-warning' : 'text-muted-foreground'}`}>
+                          {s.daysLeft < 0 ? `En retard (${Math.abs(s.daysLeft)}j)` : s.daysLeft === 0 ? "Aujourd'hui" : `Dans ${s.daysLeft}j`}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div key="calendar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="glass-card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-foreground">Juillet 2026</h3>
-              <div className="flex items-center gap-2">
-                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"><ChevronLeft className="h-4 w-4" /></button>
-                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"><ChevronRight className="h-4 w-4" /></button>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground capitalize">{monthName}</h3>
             </div>
             <div className="grid grid-cols-7 gap-1 mb-2">
               {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => (
@@ -158,20 +236,23 @@ const Maintenance = () => {
             </div>
             <div className="grid grid-cols-7 gap-1">
               {Array.from({ length: startDay }).map((_, i) => <div key={`empty-${i}`} />)}
-              {daysInJuly.map(day => (
-                <div key={day} className={cn(
-                  "min-h-[60px] rounded-lg p-1 border transition-colors",
-                  calendarEvents[day] ? "border-primary/30 bg-primary/5" : "border-border/30 bg-muted/20",
-                  day === 14 ? "ring-2 ring-primary" : ""
-                )}>
-                  <span className={cn("text-xs font-medium", day === 14 ? "text-primary font-bold" : "text-muted-foreground")}>{day}</span>
-                  {calendarEvents[day]?.map((ev, i) => (
-                    <div key={i} className={cn("text-[9px] font-medium text-white rounded px-1 py-0.5 mt-0.5 truncate", ev.color)}>
-                      {ev.title}
-                    </div>
-                  ))}
-                </div>
-              ))}
+              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+                const isToday = day === now.getDate();
+                return (
+                  <div key={day} className={cn(
+                    "min-h-[60px] rounded-lg p-1 border transition-colors",
+                    calendarEvents[day] ? "border-primary/30 bg-primary/5" : "border-border/30 bg-muted/20",
+                    isToday ? "ring-2 ring-primary" : ""
+                  )}>
+                    <span className={cn("text-xs font-medium", isToday ? "text-primary font-bold" : "text-muted-foreground")}>{day}</span>
+                    {calendarEvents[day]?.map((ev, i) => (
+                      <div key={i} className={cn("text-[9px] font-medium text-white rounded px-1 py-0.5 mt-0.5 truncate", ev.color)}>
+                        {ev.title}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -189,7 +270,10 @@ const Maintenance = () => {
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground mb-1 block">Équipement *</label>
-                  <input value={form.equipment} onChange={e => setForm(p => ({ ...p, equipment: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Nom de l'équipement" />
+                  <select value={form.equipment_id} onChange={e => setForm(p => ({ ...p, equipment_id: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Sélectionner un équipement</option>
+                    {equipmentList.map(eq => <option key={eq.id} value={eq.id}>{eq.name}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground mb-1 block">Tâche *</label>
@@ -199,7 +283,7 @@ const Maintenance = () => {
                   <div>
                     <label className="text-xs font-semibold text-muted-foreground mb-1 block">Fréquence</label>
                     <select value={form.frequency} onChange={e => setForm(p => ({ ...p, frequency: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                      {['Hebdomadaire', 'Bi-mensuel', 'Mensuel', 'Trimestriel', 'Annuel'].map(f => <option key={f}>{f}</option>)}
+                      {['Hebdomadaire', 'Bi-mensuel', 'Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'].map(f => <option key={f}>{f}</option>)}
                     </select>
                   </div>
                   <div>
