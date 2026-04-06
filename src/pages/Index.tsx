@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Clock, AlertTriangle, TrendingDown, Wrench, DollarSign,
-  Settings2, CheckCircle2, Maximize2, Minimize2, Zap, Bell, X, Download, FileText, Percent
+  Settings2, CheckCircle2, Maximize2, Minimize2, Zap, Bell, X, Download, Loader2
 } from 'lucide-react';
-import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
+import { exportToCSV } from '@/lib/exportUtils';
 import KPICard from '@/components/dashboard/KPICard';
 import { InterventionsChart, EquipmentStatusChart, CostChart } from '@/components/dashboard/DashboardCharts';
 import RecentInterventions from '@/components/dashboard/RecentInterventions';
 import AIInsightsPanel from '@/components/dashboard/AIInsightsPanel';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { supabase } from '@/integrations/supabase/client';
 
 const heatmapData = [
   { zone: 'Atelier A', mon: 2, tue: 0, wed: 1, thu: 3, fri: 1, sat: 0 },
@@ -62,12 +62,28 @@ const HealthGauge = ({ score }: { score: number }) => {
   );
 };
 
+interface DashboardStats {
+  totalEquipment: number;
+  operational: number;
+  inMaintenance: number;
+  critical: number;
+  totalInterventions: number;
+  completedInterventions: number;
+  inProgressInterventions: number;
+  plannedInterventions: number;
+  preventiveCount: number;
+  correctiveCount: number;
+  totalCost: number;
+  lowStockCount: number;
+  healthScore: number;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [commandCenter, setCommandCenter] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [healthScore] = useState(76);
-  const [liveAlerts] = useState(3);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (commandCenter) {
@@ -77,16 +93,92 @@ const Dashboard = () => {
     }
   }, [commandCenter]);
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [eqRes, intRes, spRes] = await Promise.all([
+          supabase.from('equipment').select('status, health_score'),
+          supabase.from('interventions').select('status, type, cost'),
+          supabase.from('spare_parts').select('quantity, min_stock'),
+        ]);
+
+        const equipment = eqRes.data || [];
+        const interventions = intRes.data || [];
+        const spareParts = spRes.data || [];
+
+        const operational = equipment.filter(e => e.status === 'operational').length;
+        const inMaintenance = equipment.filter(e => e.status === 'maintenance' || e.status === 'warning').length;
+        const critical = equipment.filter(e => e.status === 'critical').length;
+        const avgHealth = equipment.length > 0
+          ? Math.round(equipment.reduce((sum, e) => sum + (e.health_score || 0), 0) / equipment.length)
+          : 0;
+
+        const completed = interventions.filter(i => i.status === 'completed').length;
+        const inProgress = interventions.filter(i => i.status === 'in_progress').length;
+        const planned = interventions.filter(i => i.status === 'planned').length;
+        const preventive = interventions.filter(i => i.type === 'preventive').length;
+        const corrective = interventions.filter(i => i.type === 'corrective' || i.type === 'emergency').length;
+        const totalCost = interventions.reduce((sum, i) => sum + (Number(i.cost) || 0), 0);
+
+        const lowStock = spareParts.filter(p => p.quantity < p.min_stock).length;
+
+        setStats({
+          totalEquipment: equipment.length,
+          operational,
+          inMaintenance,
+          critical,
+          totalInterventions: interventions.length,
+          completedInterventions: completed,
+          inProgressInterventions: inProgress,
+          plannedInterventions: planned,
+          preventiveCount: preventive,
+          correctiveCount: corrective,
+          totalCost,
+          lowStockCount: lowStock,
+          healthScore: avgHealth,
+        });
+      } catch {
+        // fallback
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const s = stats!;
+  const completionRate = s.totalInterventions > 0
+    ? Math.round((s.completedInterventions / s.totalInterventions) * 100)
+    : 0;
+  const availability = s.totalEquipment > 0
+    ? ((s.operational / s.totalEquipment) * 100).toFixed(1)
+    : '0';
+  const failureRate = s.totalEquipment > 0
+    ? ((s.critical / s.totalEquipment) * 100).toFixed(1)
+    : '0';
+  const prevRatio = s.totalInterventions > 0
+    ? Math.round((s.preventiveCount / s.totalInterventions) * 100)
+    : 0;
+  const corrRatio = 100 - prevRatio;
+  const liveAlerts = s.critical + s.lowStockCount;
+
   return (
     <div className={`space-y-6 ${commandCenter ? 'fixed inset-0 z-50 bg-background overflow-auto p-6' : ''}`}>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Vue d'ensemble · Juillet 2026</p>
+          <p className="text-sm text-muted-foreground">Vue d'ensemble · Données en temps réel</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Notifications */}
           <div className="relative">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -127,7 +219,6 @@ const Dashboard = () => {
             </AnimatePresence>
           </div>
 
-          {/* Command Center Toggle */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -143,16 +234,14 @@ const Dashboard = () => {
             whileTap={{ scale: 0.98 }}
             onClick={() => exportToCSV(
               [
-                { kpi: 'MTTR', value: '2.4h', trend: '-12%' },
-                { kpi: 'MTBF', value: '168h', trend: '+8%' },
-                { kpi: 'Taux de panne', value: '4.2%', trend: '-15%' },
-                { kpi: 'Disponibilité', value: '87.5%', trend: '+3%' },
-                { kpi: 'Coûts maintenance', value: '2 900€', trend: '-22%' },
-                { kpi: 'Interventions', value: '34', trend: '' },
-                { kpi: 'Préventif/Correctif', value: '78/22', trend: '' },
+                { kpi: 'Équipements', value: `${s.operational}/${s.totalEquipment}` },
+                { kpi: 'Interventions', value: `${s.totalInterventions}` },
+                { kpi: 'Taux panne', value: `${failureRate}%` },
+                { kpi: 'Disponibilité', value: `${availability}%` },
+                { kpi: 'Coûts', value: `${s.totalCost}€` },
               ],
               'dashboard-kpis',
-              [{ key: 'kpi', label: 'KPI' }, { key: 'value', label: 'Valeur' }, { key: 'trend', label: 'Tendance' }]
+              [{ key: 'kpi', label: 'KPI' }, { key: 'value', label: 'Valeur' }]
             )}
             className="px-3 py-2 rounded-lg bg-muted text-muted-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors"
           >
@@ -181,44 +270,46 @@ const Dashboard = () => {
         <div className="flex items-center gap-8 relative z-10">
           <div className="flex flex-col items-center">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Santé Globale</p>
-            <HealthGauge score={healthScore} />
+            <HealthGauge score={s.healthScore} />
           </div>
           <div className="w-px h-14 bg-border" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 flex-1">
             {[
-              { label: 'Équipements OK', value: '45/60', color: 'text-success' },
-              { label: 'En maintenance', value: '8', color: 'text-warning' },
-              { label: 'En panne critique', value: '3', color: 'text-destructive' },
-              { label: 'Alertes actives', value: '7', color: 'text-accent' },
-            ].map(s => (
-              <div key={s.label}>
-                <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
+              { label: 'Équipements OK', value: `${s.operational}/${s.totalEquipment}`, color: 'text-success' },
+              { label: 'En maintenance', value: `${s.inMaintenance}`, color: 'text-warning' },
+              { label: 'En panne critique', value: `${s.critical}`, color: 'text-destructive' },
+              { label: 'Alertes actives', value: `${liveAlerts}`, color: 'text-accent' },
+            ].map(item => (
+              <div key={item.label}>
+                <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
               </div>
             ))}
           </div>
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
-            <Zap className="h-4 w-4 text-success" />
-            <span className="text-xs font-semibold text-success">Système nominal</span>
+          <div className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full border ${s.healthScore >= 70 ? 'bg-success/10 border-success/20' : 'bg-warning/10 border-warning/20'}`}>
+            <Zap className={`h-4 w-4 ${s.healthScore >= 70 ? 'text-success' : 'text-warning'}`} />
+            <span className={`text-xs font-semibold ${s.healthScore >= 70 ? 'text-success' : 'text-warning'}`}>
+              {s.healthScore >= 70 ? 'Système nominal' : 'Attention requise'}
+            </span>
           </div>
         </div>
       </motion.div>
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <KPICard title="MTTR" value="2.4h" subtitle="Temps moyen de réparation" icon={Clock} trend={{ value: -12, label: 'vs mois dernier' }} variant="primary" delay={0.05} />
-        <KPICard title="MTBF" value="168h" subtitle="Temps moyen entre pannes" icon={Activity} trend={{ value: 8, label: 'vs mois dernier' }} variant="success" delay={0.1} />
-        <KPICard title="Taux de panne" value="4.2%" subtitle="3 équipements en panne" icon={AlertTriangle} trend={{ value: -15, label: 'vs mois dernier' }} variant="warning" delay={0.15} />
-        <KPICard title="Disponibilité" value="87.5%" subtitle="Équipements opérationnels" icon={CheckCircle2} trend={{ value: 3, label: 'vs mois dernier' }} variant="success" delay={0.18} />
-        <KPICard title="Coûts maintenance" value="2 900€" subtitle="Budget mensuel" icon={DollarSign} trend={{ value: -22, label: 'vs mois dernier' }} variant="danger" delay={0.2} />
+        <KPICard title="Interventions" value={`${s.totalInterventions}`} subtitle={`${s.inProgressInterventions} en cours`} icon={Wrench} variant="primary" delay={0.05} />
+        <KPICard title="Équipements" value={`${s.operational}/${s.totalEquipment}`} subtitle="Opérationnels" icon={Activity} variant="success" delay={0.1} />
+        <KPICard title="Taux de panne" value={`${failureRate}%`} subtitle={`${s.critical} équipement(s) critique(s)`} icon={AlertTriangle} variant="warning" delay={0.15} />
+        <KPICard title="Disponibilité" value={`${availability}%`} subtitle="Équipements opérationnels" icon={CheckCircle2} variant="success" delay={0.18} />
+        <KPICard title="Coûts maintenance" value={`${s.totalCost.toLocaleString('fr-FR')}€`} subtitle="Total interventions" icon={DollarSign} variant="danger" delay={0.2} />
       </div>
 
       {/* Secondary KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard title="Interventions ce mois" value="34" icon={Wrench} delay={0.25} />
-        <KPICard title="Équipements actifs" value="45/60" icon={Settings2} delay={0.3} />
-        <KPICard title="Taux complétion" value="92%" icon={CheckCircle2} delay={0.35} />
-        <KPICard title="Préventif/Correctif" value="78/22" subtitle="Ratio optimal > 70%" icon={TrendingDown} delay={0.4} />
+        <KPICard title="Planifiées" value={`${s.plannedInterventions}`} icon={Clock} delay={0.25} />
+        <KPICard title="Stock critique" value={`${s.lowStockCount}`} subtitle="Pièces en dessous du minimum" icon={Settings2} delay={0.3} />
+        <KPICard title="Taux complétion" value={`${completionRate}%`} icon={CheckCircle2} delay={0.35} />
+        <KPICard title="Préventif/Correctif" value={`${prevRatio}/${corrRatio}`} subtitle={prevRatio >= 70 ? 'Ratio optimal ✓' : 'Ratio à améliorer'} icon={TrendingDown} delay={0.4} />
       </div>
 
       {/* Charts Row */}
@@ -231,7 +322,6 @@ const Dashboard = () => {
 
       {/* Heatmap + Recent Interventions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Failure Heatmap */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -283,7 +373,6 @@ const Dashboard = () => {
         </div>
         <CostChart />
       </div>
-
     </div>
   );
 };
