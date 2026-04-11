@@ -82,10 +82,12 @@
     "logout": "Déconnexion"
   },
   "chatbot": {
-    "title": "Assistant IA",
-    "placeholder": "Posez votre question maintenance...",
-    "welcome": "Bonjour ! Je suis votre assistant de maintenance intelligent. Comment puis-je vous aider ?",
-    "thinking": "Réflexion en cours..."
+    "title": "Assistant GMAO",
+    "placeholder": "Posez votre question...",
+    "welcome": "Bonjour ! Je suis votre assistant GMAO intelligent. Comment puis-je vous aider ?",
+    "thinking": "Réflexion...",
+    "online": "En ligne — IA active",
+    "listen": "Écouter"
   },
   "gamification": {
     "title": "Gamification",

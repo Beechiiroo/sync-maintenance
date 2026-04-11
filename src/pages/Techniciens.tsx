@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Star, Wrench, Clock, TrendingUp, Medal, Phone, Mail, ChevronRight, Filter } from 'lucide-react';
+import { Users, Star, Wrench, Clock, TrendingUp, Medal, Phone, Mail, ChevronRight, Shield, Award, Zap, Target } from 'lucide-react';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { cn } from '@/lib/utils';
 
@@ -38,11 +38,11 @@ const statusConfig: Record<TechStatus, { label: string; color: string; bg: strin
   conge: { label: 'En congé', color: 'text-muted-foreground', bg: 'bg-muted', dot: 'bg-muted-foreground' },
 };
 
-const roleColors: Record<TechRole, string> = {
-  'Responsable maintenance': 'bg-primary/10 text-primary',
-  'Technicien Senior': 'bg-accent/10 text-accent-foreground',
-  'Technicien': 'bg-info/10 text-info',
-  'Technicien Junior': 'bg-muted text-muted-foreground',
+const roleConfig: Record<TechRole, { color: string; icon: any }> = {
+  'Responsable maintenance': { color: 'bg-primary/10 text-primary', icon: Shield },
+  'Technicien Senior': { color: 'bg-accent/10 text-accent-foreground', icon: Award },
+  'Technicien': { color: 'bg-info/10 text-info', icon: Wrench },
+  'Technicien Junior': { color: 'bg-muted text-muted-foreground', icon: Zap },
 };
 
 const Techniciens = () => {
@@ -60,11 +60,10 @@ const Techniciens = () => {
   };
 
   const TechAvatar = ({ tech, size = 'md' }: { tech: Technician; size?: 'sm' | 'md' | 'lg' }) => {
-    const sizeClasses = { sm: 'w-10 h-10 text-xs', md: 'w-12 h-12 text-sm', lg: 'w-16 h-16 text-xl' };
-    const roundedClasses = { sm: 'rounded-lg', md: 'rounded-xl', lg: 'rounded-2xl' };
+    const sizeClasses = { sm: 'w-10 h-10 text-xs', md: 'w-14 h-14 text-sm', lg: 'w-20 h-20 text-xl' };
     return (
       <div
-        className={cn(sizeClasses[size], roundedClasses[size], "overflow-hidden flex items-center justify-center shrink-0 cursor-pointer", tech.photoUrl ? '' : 'gradient-primary text-primary-foreground font-bold')}
+        className={cn(sizeClasses[size], "rounded-2xl overflow-hidden flex items-center justify-center shrink-0 cursor-pointer ring-2 ring-border/50 shadow-md", tech.photoUrl ? '' : 'gradient-primary text-primary-foreground font-bold')}
         onClick={(e) => { e.stopPropagation(); if (tech.photoUrl) setPreviewImage({ src: tech.photoUrl, alt: tech.name }); }}
       >
         {tech.photoUrl ? (
@@ -78,24 +77,33 @@ const Techniciens = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Techniciens</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" /> Techniciens
+          </h1>
           <p className="text-sm text-muted-foreground">{technicians.length} membres · Équipe maintenance</p>
         </div>
       </motion.div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total équipe', value: stats.total, color: 'text-foreground', bg: 'bg-muted/50' },
-          { label: 'Disponibles', value: stats.disponible, color: 'text-success', bg: 'bg-success/10' },
-          { label: 'En intervention', value: stats.en_intervention, color: 'text-warning', bg: 'bg-warning/10' },
-          { label: 'Note moyenne', value: stats.avgRating, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Total équipe', value: stats.total, color: 'text-foreground', bg: 'bg-card', icon: Users, border: 'border-border' },
+          { label: 'Disponibles', value: stats.disponible, color: 'text-success', bg: 'bg-success/5', icon: Target, border: 'border-success/20' },
+          { label: 'En intervention', value: stats.en_intervention, color: 'text-warning', bg: 'bg-warning/5', icon: Wrench, border: 'border-warning/20' },
+          { label: 'Note moyenne', value: stats.avgRating, color: 'text-primary', bg: 'bg-primary/5', icon: Star, border: 'border-primary/20' },
         ].map((s, i) => (
-          <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className={cn("rounded-xl p-3 text-center", s.bg)}>
-            <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
-            <p className="text-xs text-muted-foreground">{s.label}</p>
+          <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+            className={cn("rounded-xl p-4 border flex items-center gap-3", s.bg, s.border)}>
+            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", s.bg)}>
+              <s.icon className={cn("h-5 w-5", s.color)} />
+            </div>
+            <div>
+              <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+            </div>
           </motion.div>
         ))}
       </div>
@@ -103,18 +111,25 @@ const Techniciens = () => {
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
         {(['all', 'disponible', 'en_intervention', 'conge'] as const).map(s => (
-          <button key={s} onClick={() => setFilterStatus(s)} className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-colors", filterStatus === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80")}>
-            {s === 'all' ? 'Tous' : statusConfig[s].label}
+          <button key={s} onClick={() => setFilterStatus(s)} className={cn(
+            "px-4 py-2 rounded-xl text-xs font-semibold transition-all",
+            filterStatus === s
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+              : "bg-card border border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+          )}>
+            {s === 'all' ? `Tous (${stats.total})` : `${statusConfig[s].label} (${technicians.filter(t => t.status === s).length})`}
           </button>
         ))}
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <AnimatePresence mode="popLayout">
           {filtered.map((tech, i) => {
             const sc = statusConfig[tech.status];
+            const rc = roleConfig[tech.role];
             const completionRate = Math.round(tech.completed / tech.tasks * 100);
+            const RoleIcon = rc.icon;
             return (
               <motion.div
                 key={tech.id}
@@ -123,34 +138,41 @@ const Techniciens = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: i * 0.06 }}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -4, boxShadow: '0 12px 40px -12px hsl(var(--primary) / 0.15)' }}
                 onClick={() => setSelected(tech)}
-                className="glass-card p-5 cursor-pointer"
+                className="bg-card border border-border rounded-2xl p-5 cursor-pointer hover:border-primary/30 transition-all"
               >
+                {/* Top section */}
                 <div className="flex items-start gap-4 mb-4">
                   <div className="relative">
                     <TechAvatar tech={tech} />
-                    <span className={cn("absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card", sc.dot)} />
+                    <span className={cn("absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card", sc.dot)} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-foreground">{tech.name}</h3>
-                    <p className="text-xs text-muted-foreground">{tech.experience} d'expérience</p>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", roleColors[tech.role])}>{tech.role}</span>
-                      <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", sc.bg, sc.color)}>{sc.label}</span>
+                    <h3 className="text-sm font-bold text-foreground">{tech.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">{tech.speciality} · {tech.experience}</p>
+                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                      <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-lg flex items-center gap-1", rc.color)}>
+                        <RoleIcon className="h-3 w-3" /> {tech.role}
+                      </span>
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className={cn("px-2 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1", sc.bg, sc.color)}>
+                    <span className={cn("w-1.5 h-1.5 rounded-full", sc.dot)} />
+                    {sc.label}
+                  </div>
                 </div>
 
-                <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">{tech.speciality}</span>
-                    <span className="font-medium text-foreground">{completionRate}%</span>
+                {/* Progress bar */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="text-muted-foreground">Taux de complétion</span>
+                    <span className="font-bold text-foreground">{completionRate}%</span>
                   </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full gradient-primary rounded-full"
+                      className="h-full rounded-full"
+                      style={{ background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))' }}
                       initial={{ width: 0 }}
                       animate={{ width: `${completionRate}%` }}
                       transition={{ duration: 1, delay: 0.3 + i * 0.08 }}
@@ -158,19 +180,34 @@ const Techniciens = () => {
                   </div>
                 </div>
 
+                {/* Stats row */}
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { icon: Wrench, value: tech.tasks, label: 'Tâches' },
-                    { icon: TrendingUp, value: `${completionRate}%`, label: 'Taux' },
-                    { icon: Star, value: tech.rating, label: 'Note', iconColor: 'text-warning' },
+                    { icon: Wrench, value: tech.tasks, label: 'Tâches', iconBg: 'bg-info/10', iconColor: 'text-info' },
+                    { icon: TrendingUp, value: `${completionRate}%`, label: 'Taux', iconBg: 'bg-success/10', iconColor: 'text-success' },
+                    { icon: Star, value: tech.rating, label: 'Note', iconBg: 'bg-warning/10', iconColor: 'text-warning' },
                   ].map((stat, j) => (
-                    <div key={j} className="text-center p-2 rounded-lg bg-muted/50">
-                      <stat.icon className={cn("h-3.5 w-3.5 mx-auto mb-1", stat.iconColor || "text-muted-foreground")} />
+                    <div key={j} className="text-center p-2.5 rounded-xl bg-muted/30 border border-border/50">
+                      <div className={cn("w-7 h-7 rounded-lg mx-auto mb-1.5 flex items-center justify-center", stat.iconBg)}>
+                        <stat.icon className={cn("h-3.5 w-3.5", stat.iconColor)} />
+                      </div>
                       <p className="text-sm font-bold text-foreground">{stat.value}</p>
                       <p className="text-[10px] text-muted-foreground">{stat.label}</p>
                     </div>
                   ))}
                 </div>
+
+                {/* Certifications preview */}
+                {tech.certifications.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-border/50">
+                    {tech.certifications.slice(0, 3).map(c => (
+                      <span key={c} className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-primary/5 text-primary border border-primary/10">{c}</span>
+                    ))}
+                    {tech.certifications.length > 3 && (
+                      <span className="text-[10px] text-muted-foreground px-1">+{tech.certifications.length - 3}</span>
+                    )}
+                  </div>
+                )}
               </motion.div>
             );
           })}
@@ -181,20 +218,44 @@ const Techniciens = () => {
       <AnimatePresence>
         {selected && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }} className="glass-card-strong w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center gap-4 mb-5">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }} className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+              {/* Profile header */}
+              <div className="flex items-center gap-4 mb-6">
                 <TechAvatar tech={selected} size="lg" />
-                <div>
-                  <h2 className="text-base font-bold text-foreground">{selected.name}</h2>
-                  <p className="text-xs text-muted-foreground">{selected.role}</p>
-                  <div className="flex items-center gap-1 mt-1">
+                <div className="flex-1">
+                  <h2 className="text-lg font-bold text-foreground">{selected.name}</h2>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-lg flex items-center gap-1", roleConfig[selected.role].color)}>
+                      {selected.role}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-2">
                     {[1, 2, 3, 4, 5].map(s => (
-                      <Star key={s} className={cn("h-3 w-3", s <= Math.round(selected.rating) ? 'text-warning fill-warning' : 'text-muted')} />
+                      <Star key={s} className={cn("h-4 w-4", s <= Math.round(selected.rating) ? 'text-warning fill-warning' : 'text-muted')} />
                     ))}
-                    <span className="text-xs text-muted-foreground ml-1">{selected.rating}</span>
+                    <span className="text-sm font-bold text-foreground ml-1">{selected.rating}</span>
                   </div>
                 </div>
               </div>
+
+              {/* Performance metric */}
+              <div className="p-4 rounded-xl bg-muted/30 border border-border/50 mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-muted-foreground">Performance globale</span>
+                  <span className="text-sm font-bold text-primary">{Math.round(selected.completed / selected.tasks * 100)}%</span>
+                </div>
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.round(selected.completed / selected.tasks * 100)}%` }}
+                    transition={{ duration: 1 }}
+                    className="h-full rounded-full"
+                    style={{ background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))' }}
+                  />
+                </div>
+              </div>
+
+              {/* Details */}
               <div className="space-y-2">
                 {[
                   { label: 'Spécialité', value: selected.speciality },
@@ -203,29 +264,30 @@ const Techniciens = () => {
                   { label: 'Tâches', value: `${selected.completed}/${selected.tasks} complétées` },
                   { label: 'Téléphone', value: selected.phone },
                 ].map(row => (
-                  <div key={row.label} className="flex justify-between py-2 border-b border-border/50 last:border-0">
+                  <div key={row.label} className="flex justify-between py-2.5 border-b border-border/50 last:border-0">
                     <span className="text-xs text-muted-foreground">{row.label}</span>
-                    <span className="text-xs font-medium text-foreground">{row.value}</span>
+                    <span className="text-xs font-semibold text-foreground">{row.value}</span>
                   </div>
                 ))}
                 {selected.certifications.length > 0 && (
-                  <div className="pt-2">
-                    <p className="text-xs text-muted-foreground mb-2">Certifications</p>
+                  <div className="pt-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Certifications</p>
                     <div className="flex flex-wrap gap-1.5">
                       {selected.certifications.map(c => (
-                        <span key={c} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">{c}</span>
+                        <span key={c} className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/10 flex items-center gap-1">
+                          <Award className="h-3 w-3" /> {c}
+                        </span>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
-              <button onClick={() => setSelected(null)} className="w-full mt-4 h-9 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">Fermer</button>
+              <button onClick={() => setSelected(null)} className="w-full mt-5 h-10 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">Fermer</button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Image Preview */}
       {previewImage && (
         <ImagePreviewModal src={previewImage.src} alt={previewImage.alt} open={!!previewImage} onClose={() => setPreviewImage(null)} />
       )}
