@@ -82,10 +82,12 @@
     "logout": "Sign Out"
   },
   "chatbot": {
-    "title": "AI Assistant",
-    "placeholder": "Ask your maintenance question...",
-    "welcome": "Hello! I'm your intelligent maintenance assistant. How can I help you?",
-    "thinking": "Thinking..."
+    "title": "CMMS Assistant",
+    "placeholder": "Ask your question...",
+    "welcome": "Hello! I'm your intelligent CMMS assistant. How can I help you?",
+    "thinking": "Thinking...",
+    "online": "Online — AI active",
+    "listen": "Listen"
   },
   "gamification": {
     "title": "Gamification",
