@@ -438,6 +438,9 @@ const Equipements = () => {
                 <button className="flex-1 h-9 rounded-lg bg-muted text-muted-foreground text-xs font-medium hover:bg-muted/80 transition-colors flex items-center justify-center gap-1.5">
                   <History className="h-3.5 w-3.5" /> Historique
                 </button>
+                <button onClick={(e) => { e.stopPropagation(); setQrEquipment(selectedEq); setSelectedEq(null); }} className="flex-1 h-9 rounded-lg bg-muted text-muted-foreground text-xs font-medium hover:bg-muted/80 transition-colors flex items-center justify-center gap-1.5">
+                  <QrCode className="h-3.5 w-3.5" /> QR Code
+                </button>
                 <button className="flex-1 h-9 rounded-lg gradient-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-1.5">
                   <Wrench className="h-3.5 w-3.5" /> Créer OT
                 </button>
