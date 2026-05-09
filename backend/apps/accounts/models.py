@@ -9,12 +9,12 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError("Email required")
         email = self.normalize_email(email)
+        role = extra.pop("role", "client")
         user = self.model(email=email, **extra)
         user.set_password(password)
         user.save(using=self._db)
-        # Auto-create profile + default role
-        Profile.objects.get_or_create(user=user, defaults={"email": email, "full_name": extra.get("full_name","")})
-        UserRole.objects.get_or_create(user=user, role=extra.get("role","client"))
+        Profile.objects.get_or_create(user=user, defaults={"email": email, "full_name": extra.get("full_name",""), "role": role})
+        UserRole.objects.get_or_create(user=user, role=role)
         return user
     def create_superuser(self, email, password=None, **extra):
         extra.setdefault("is_staff", True)
