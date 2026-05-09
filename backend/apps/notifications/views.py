@@ -4,11 +4,11 @@ from django.urls import path, include
 from .models import Notification
 
 class NotificationSerializer(serializers.ModelSerializer):
-    user_id = serializers.UUIDField(source="user_id", read_only=False, required=False)
+    user_id = serializers.UUIDField(read_only=True)
     class Meta:
         model = Notification
         fields = ["id","user_id","title","message","type","link","read","metadata","created_at"]
-        read_only_fields = ["id","created_at"]
+        read_only_fields = ["id","created_at","user_id"]
 
 class NotificationViewSet(viewsets.ModelViewSet):
     serializer_class = NotificationSerializer
