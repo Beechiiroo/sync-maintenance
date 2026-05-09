@@ -4,11 +4,11 @@ from django.urls import path, include
 from .models import AuditLog
 
 class AuditLogSerializer(serializers.ModelSerializer):
-    user_id = serializers.UUIDField(source="user_id", read_only=True)
+    user_id = serializers.UUIDField(read_only=True)
     class Meta:
         model = AuditLog
         fields = ["id","user_id","module","action","details","ip_address","metadata","created_at"]
-        read_only_fields = ["id","created_at","user_id"]
+        read_only_fields = ["id","created_at","user_id","ip_address"]
 
 class AuditLogViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = AuditLog.objects.all().order_by("-created_at")
