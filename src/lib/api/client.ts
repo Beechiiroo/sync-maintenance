@@ -26,8 +26,11 @@ export const tokenStorage = {
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
   timeout: 20000,
+  withCredentials: true,
+  xsrfCookieName: "csrftoken",
+  xsrfHeaderName: "X-CSRFToken",
 });
 
 // Attach access token
