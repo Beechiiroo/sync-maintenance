@@ -579,7 +579,7 @@ const Auth = () => {
     } catch {
       navigate('/');
     }
-  }, [email, password, fullName, accessLevel, authMode, navigate, toast]);
+  }, [email, password, fullName, authMode, navigate, toast]);
 
   const ACCESS_LEVELS: { key: AccessLevel; label: string; icon: string; desc: string }[] = [
     { key: 'admin', label: 'Admin', icon: '👔', desc: 'Accès complet' },
