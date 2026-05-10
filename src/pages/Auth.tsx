@@ -900,28 +900,32 @@ const Auth = () => {
                 <p className="gmao-mono" style={{ fontSize: 11, color: '#4a7a9b' }}>Connexion réussie</p>
               </div>
 
-              {/* Role Display Grid */}
+              {/* System Status Panel (replaces role grid for security: do not echo role) */}
               <div style={{ width: '100%' }}>
                 <label className="gmao-mono" style={{ display: 'block', fontSize: 10, color: '#4a7a9b', marginBottom: 10, letterSpacing: '0.08em', textAlign: 'center' }}>
-                  NIVEAU D'ACCÈS
+                  STATUT SYSTÈME
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {ACCESS_LEVELS.map(lvl => (
-                    <div key={lvl.key}
+                  {[
+                    { icon: '🛡️', label: 'Session', desc: 'Chiffrée AES-256', color: '#28c76f' },
+                    { icon: '🔐', label: 'JWT', desc: 'Rotation active', color: '#1e90ff' },
+                    { icon: '📡', label: 'API', desc: 'Connectée', color: '#28c76f' },
+                    { icon: '🤖', label: 'Assistant IA', desc: 'Opérationnel', color: '#ff6b2b' },
+                  ].map((s) => (
+                    <div key={s.label}
                       style={{
                         padding: '14px 12px', borderRadius: 10, textAlign: 'left',
-                        background: loggedInRole === lvl.key ? 'linear-gradient(135deg, rgba(30,144,255,0.25), rgba(30,144,255,0.1))' : 'rgba(14,26,48,0.5)',
-                        border: `2px solid ${loggedInRole === lvl.key ? '#1e90ff' : '#1e3a5a'}`,
-                        boxShadow: loggedInRole === lvl.key ? '0 0 20px rgba(30,144,255,0.3), inset 0 0 12px rgba(30,144,255,0.1)' : 'none',
-                        opacity: loggedInRole === lvl.key ? 1 : 0.4,
+                        background: 'linear-gradient(135deg, rgba(30,144,255,0.18), rgba(30,144,255,0.06))',
+                        border: `2px solid ${s.color}`,
+                        boxShadow: `0 0 16px ${s.color}33, inset 0 0 10px ${s.color}15`,
                         transition: 'all 0.3s',
                       }}>
-                      <div style={{ fontSize: 20, marginBottom: 4 }}>{lvl.icon}</div>
-                      <div className="gmao-mono" style={{ fontSize: 13, fontWeight: 700, color: loggedInRole === lvl.key ? '#1e90ff' : '#4a7a9b' }}>
-                        {lvl.label}
+                      <div style={{ fontSize: 20, marginBottom: 4 }}>{s.icon}</div>
+                      <div className="gmao-mono" style={{ fontSize: 13, fontWeight: 700, color: s.color }}>
+                        {s.label}
                       </div>
-                      <div className="gmao-mono" style={{ fontSize: 9, color: loggedInRole === lvl.key ? '#7ab3d4' : '#3a5a7a', marginTop: 2 }}>
-                        {lvl.desc}
+                      <div className="gmao-mono" style={{ fontSize: 9, color: '#7ab3d4', marginTop: 2 }}>
+                        {s.desc}
                       </div>
                     </div>
                   ))}

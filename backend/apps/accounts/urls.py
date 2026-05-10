@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 urlpatterns = [
+    path("csrf/", views.csrf),
     path("login/", views.login),
     path("register/", views.register),
     path("me/", views.me),
