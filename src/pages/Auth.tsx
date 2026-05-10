@@ -512,7 +512,6 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [accessLevel, setAccessLevel] = useState<AccessLevel>('client');
   const [lang, setLang] = useState('fr');
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [sessionId] = useState(genSessionId);
@@ -563,7 +562,7 @@ const Auth = () => {
       if (authMode === 'signup') {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { data: { full_name: fullName || email.split('@')[0], role: accessLevel }, emailRedirectTo: window.location.origin }
+          options: { data: { full_name: fullName || email.split('@')[0] }, emailRedirectTo: window.location.origin }
         });
         if (error) { toast({ title: 'Erreur d\'inscription', description: error.message, variant: 'destructive' }); return; }
         toast({ title: 'Inscription réussie', description: 'Vous pouvez maintenant vous connecter.' });
@@ -580,7 +579,7 @@ const Auth = () => {
     } catch {
       navigate('/');
     }
-  }, [email, password, fullName, accessLevel, authMode, navigate, toast]);
+  }, [email, password, fullName, authMode, navigate, toast]);
 
   const ACCESS_LEVELS: { key: AccessLevel; label: string; icon: string; desc: string }[] = [
     { key: 'admin', label: 'Admin', icon: '👔', desc: 'Accès complet' },
@@ -770,25 +769,38 @@ const Auth = () => {
                 </div>
               )}
 
-              {/* Access level */}
+              {/* Security Protocol Panel — replaces role grid (roles assigned server-side) */}
               <div style={{ marginBottom: 16 }}>
-                <label className="gmao-mono" style={{ display: 'block', fontSize: 10, color: '#4a7a9b', marginBottom: 8, letterSpacing: '0.08em' }}>NIVEAU D'ACCÈS</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  {ACCESS_LEVELS.map(lvl => (
-                    <button key={lvl.key} type="button" onClick={() => setAccessLevel(lvl.key)} className="gmao-mono"
-                      style={{
-                        padding: '10px 8px', borderRadius: 8, fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                        letterSpacing: '0.04em', transition: 'all 0.25s', textAlign: 'left',
-                        background: accessLevel === lvl.key ? 'linear-gradient(135deg, rgba(30,144,255,0.2), rgba(30,144,255,0.1))' : 'rgba(14,26,48,0.5)',
-                        border: `1px solid ${accessLevel === lvl.key ? '#1e90ff' : '#1e3a5a'}`,
-                        color: accessLevel === lvl.key ? '#1e90ff' : '#4a7a9b',
-                        boxShadow: accessLevel === lvl.key ? '0 0 12px rgba(30,144,255,0.2)' : 'none',
-                      }}>
-                      <div style={{ fontSize: 16, marginBottom: 2 }}>{lvl.icon}</div>
-                      <div style={{ fontSize: 11, fontWeight: 700 }}>{lvl.label}</div>
-                      <div style={{ fontSize: 8, opacity: 0.7, marginTop: 1 }}>{lvl.desc}</div>
-                    </button>
-                  ))}
+                <label className="gmao-mono" style={{ display: 'block', fontSize: 10, color: '#4a7a9b', marginBottom: 8, letterSpacing: '0.08em' }}>PROTOCOLE DE SÉCURITÉ</label>
+                <div style={{
+                  background: '#060d16', borderRadius: 10, border: '1px solid #1e3a5a',
+                  padding: '14px 16px', fontFamily: '"IBM Plex Mono", monospace', fontSize: 11,
+                  boxShadow: 'inset 0 0 20px rgba(30,144,255,0.06)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, borderBottom: '1px solid #1a2a3a', paddingBottom: 8 }}>
+                    <span style={{ color: '#4a7a9b', fontSize: 10 }}>CRYPTO-PROTOCOL STATUS</span>
+                    <span style={{ color: '#28c76f', fontSize: 9, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#28c76f', boxShadow: '0 0 6px #28c76f', animation: 'pulse-dot 2s ease infinite' }} />
+                      ACTIVE
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
+                    {[
+                      { k: 'Cipher', v: 'AES-256-GCM', c: '#1e90ff' },
+                      { k: 'Handshake', v: 'TLS 1.3', c: '#1e90ff' },
+                      { k: 'Auth', v: 'JWT+Refresh', c: '#ff6b2b' },
+                      { k: 'Session', v: 'SHA-384 HMAC', c: '#28c76f' },
+                    ].map(item => (
+                      <div key={item.k} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ color: '#3a5a7a', fontSize: 9, letterSpacing: '0.06em' }}>{item.k}</span>
+                        <span style={{ color: item.c, fontSize: 11, fontWeight: 600 }}>{item.v}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #1a2a3a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="gmao-mono" style={{ color: '#2a4a6a', fontSize: 9 }}>RÔLE:</span>
+                    <span className="gmao-mono" style={{ color: '#4a7a9b', fontSize: 9 }}>Assigné automatiquement par le système</span>
+                  </div>
                 </div>
               </div>
 
