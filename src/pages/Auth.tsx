@@ -863,8 +863,8 @@ const Auth = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <HoloToggle checked={rememberMe} onChange={setRememberMe} label="Se souvenir de moi" />
                 {authMode === 'login' && (
-                  <button type="button" className="gmao-mono" style={{ background: 'none', border: 'none', color: '#1e90ff', fontSize: 10, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(30,144,255,0.3)' }}>
-                    Mot de passe oublié ?
+                  <button type="button" onClick={handleForgotPassword} disabled={forgotLoading} className="gmao-mono" style={{ background: 'none', border: 'none', color: '#1e90ff', fontSize: 10, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(30,144,255,0.3)', opacity: forgotLoading ? 0.5 : 1 }}>
+                    {forgotLoading ? 'Envoi...' : 'Mot de passe oublié ?'}
                   </button>
                 )}
               </div>
