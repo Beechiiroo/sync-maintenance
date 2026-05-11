@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { OtpVerificationModal } from '@/components/auth/OtpVerificationModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type AccessLevel = 'admin' | 'technician' | 'assistant' | 'client';
@@ -520,6 +521,9 @@ const Auth = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [showBiometric, setShowBiometric] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpPurpose, setOtpPurpose] = useState<'2fa_login' | 'password_reset'>('2fa_login');
+  const [forgotLoading, setForgotLoading] = useState(false);
   const pwStrength = getPasswordStrength(password);
 
   // Voice greeting on lamp toggle
@@ -556,6 +560,20 @@ const Auth = () => {
     }, 1500);
   };
 
+  const sendOtpAndOpen = useCallback(async (targetEmail: string, purpose: '2fa_login' | 'password_reset') => {
+    const { data, error } = await supabase.functions.invoke('send-2fa-code', {
+      body: { email: targetEmail, purpose },
+    });
+    if (error || !data?.ok) {
+      toast({ title: 'Erreur', description: data?.error || error?.message || "Échec d'envoi du code", variant: 'destructive' });
+      return false;
+    }
+    setOtpPurpose(purpose);
+    setOtpOpen(true);
+    toast({ title: 'Code envoyé', description: `Vérifiez votre boîte mail (${targetEmail})` });
+    return true;
+  }, [toast]);
+
   const handleOverlayDone = useCallback(async () => {
     setOverlayVisible(false);
     try {
@@ -564,22 +582,59 @@ const Auth = () => {
           email, password,
           options: { data: { full_name: fullName || email.split('@')[0] }, emailRedirectTo: window.location.origin }
         });
-        if (error) { toast({ title: 'Erreur d\'inscription', description: error.message, variant: 'destructive' }); return; }
-        toast({ title: 'Inscription réussie', description: 'Vous pouvez maintenant vous connecter.' });
-        // Auto-login after signup
+        if (error) { toast({ title: "Erreur d'inscription", description: error.message, variant: 'destructive' }); return; }
+        // Validate password works, then sign out and require 2FA email code
         const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
         if (loginError) {
+          toast({ title: 'Inscription créée', description: "Vérifiez votre email puis connectez-vous." });
           setAuthMode('login');
           return;
         }
+        await supabase.auth.signOut();
+        await sendOtpAndOpen(email, '2fa_login');
         return;
       }
+      // Login: validate password, then trigger 2FA
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { toast({ title: 'Erreur d\'authentification', description: error.message, variant: 'destructive' }); return; }
-    } catch {
-      navigate('/');
+      if (error) { toast({ title: "Erreur d'authentification", description: error.message, variant: 'destructive' }); return; }
+      await supabase.auth.signOut();
+      await sendOtpAndOpen(email, '2fa_login');
+    } catch (err: any) {
+      toast({ title: 'Erreur', description: err?.message || 'Erreur inattendue', variant: 'destructive' });
     }
-  }, [email, password, fullName, authMode, navigate, toast]);
+  }, [email, password, fullName, authMode, toast, sendOtpAndOpen]);
+
+  const handleOtpVerified = useCallback(async (data: { hashed_token: string; type: 'magiclink' | 'recovery'; email: string }) => {
+    setOtpOpen(false);
+    if (data.type === 'recovery') {
+      // Move user to reset-password page with the token
+      navigate(`/reset-password?token_hash=${encodeURIComponent(data.hashed_token)}&type=recovery&email=${encodeURIComponent(data.email)}`);
+      return;
+    }
+    const { error } = await supabase.auth.verifyOtp({
+      type: 'magiclink',
+      token_hash: data.hashed_token,
+    });
+    if (error) {
+      toast({ title: 'Session', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: '✓ Authentifié', description: 'Bienvenue dans le centre de commande.' });
+    navigate('/');
+  }, [navigate, toast]);
+
+  const handleForgotPassword = useCallback(async () => {
+    if (!email) {
+      toast({ title: 'Email requis', description: 'Saisissez votre email pour recevoir un code de réinitialisation.', variant: 'destructive' });
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await sendOtpAndOpen(email, 'password_reset');
+    } finally {
+      setForgotLoading(false);
+    }
+  }, [email, sendOtpAndOpen, toast]);
 
   const ACCESS_LEVELS: { key: AccessLevel; label: string; icon: string; desc: string }[] = [
     { key: 'admin', label: 'Admin', icon: '👔', desc: 'Accès complet' },
@@ -808,8 +863,8 @@ const Auth = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <HoloToggle checked={rememberMe} onChange={setRememberMe} label="Se souvenir de moi" />
                 {authMode === 'login' && (
-                  <button type="button" className="gmao-mono" style={{ background: 'none', border: 'none', color: '#1e90ff', fontSize: 10, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(30,144,255,0.3)' }}>
-                    Mot de passe oublié ?
+                  <button type="button" onClick={handleForgotPassword} disabled={forgotLoading} className="gmao-mono" style={{ background: 'none', border: 'none', color: '#1e90ff', fontSize: 10, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(30,144,255,0.3)', opacity: forgotLoading ? 0.5 : 1 }}>
+                    {forgotLoading ? 'Envoi...' : 'Mot de passe oublié ?'}
                   </button>
                 )}
               </div>
@@ -884,6 +939,16 @@ const Auth = () => {
       </div>
 
       <LoginOverlay visible={overlayVisible} onDone={handleOverlayDone} />
+
+      <OtpVerificationModal
+        email={email}
+        purpose={otpPurpose}
+        open={otpOpen}
+        onClose={() => setOtpOpen(false)}
+        onVerified={handleOtpVerified}
+        title={otpPurpose === 'password_reset' ? 'Réinitialisation du mot de passe' : 'Authentification à deux facteurs'}
+        subtitle={otpPurpose === 'password_reset' ? "Entrez le code reçu pour réinitialiser votre mot de passe" : "Entrez le code à 6 chiffres reçu par email"}
+      />
 
       {/* Role Card After Login */}
       <AnimatePresence>

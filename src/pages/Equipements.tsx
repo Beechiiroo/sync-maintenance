@@ -56,6 +56,7 @@ const Equipements = () => {
   const scanIntervalRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ name: '', category: categories[0], location: locations[0], status: 'operational' as EquipmentStatus, manufacturer: '', serialNumber: '', imageUrl: '' });
+  const [aiImgLoading, setAiImgLoading] = useState(false);
 
   const fetchEquipments = async () => {
     setLoading(true);
@@ -332,6 +333,29 @@ const Equipements = () => {
                       </>
                     )}
                   </div>
+                  <button
+                    type="button"
+                    disabled={aiImgLoading || !form.name}
+                    onClick={async () => {
+                      if (!form.name) { toast({ title: 'Nom requis', description: "Saisissez d'abord le nom de l'équipement.", variant: 'destructive' }); return; }
+                      setAiImgLoading(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke('generate-equipment-image', {
+                          body: { name: form.name, category: form.category, manufacturer: form.manufacturer },
+                        });
+                        if (error || !data?.imageUrl) {
+                          toast({ title: 'Échec génération IA', description: data?.error || error?.message || 'Erreur', variant: 'destructive' });
+                          return;
+                        }
+                        setForm(p => ({ ...p, imageUrl: data.imageUrl }));
+                        toast({ title: '✓ Image générée', description: 'Image IA ajoutée à l\'équipement.' });
+                      } finally { setAiImgLoading(false); }
+                    }}
+                    className="mt-2 w-full h-9 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 hover:from-primary/30 hover:to-accent/30 transition-all disabled:opacity-50"
+                  >
+                    {aiImgLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span>✨</span>}
+                    {aiImgLoading ? 'Génération IA...' : "Générer l'image avec l'IA"}
+                  </button>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nom de l'équipement *</label>

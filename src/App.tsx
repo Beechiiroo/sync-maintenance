@@ -14,6 +14,7 @@ import RoleGuard from "./components/auth/RoleGuard";
 
 const Dashboard = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Equipements = lazy(() => import("./pages/Equipements"));
 const Equipements3D = lazy(() => import("./pages/Equipements3D"));
 const Interventions = lazy(() => import("./pages/Interventions"));
@@ -77,6 +78,7 @@ const App = () => (
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<AppLayout />}>
                 {/* Accessible à tous les rôles */}
                 <Route path="/" element={<Dashboard />} />
