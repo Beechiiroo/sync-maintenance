@@ -78,6 +78,7 @@ const App = () => (
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<AppLayout />}>
                 {/* Accessible à tous les rôles */}
                 <Route path="/" element={<Dashboard />} />
