@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { OtpVerificationModal } from '@/components/auth/OtpVerificationModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type AccessLevel = 'admin' | 'technician' | 'assistant' | 'client';
