@@ -56,6 +56,7 @@ const Equipements = () => {
   const scanIntervalRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ name: '', category: categories[0], location: locations[0], status: 'operational' as EquipmentStatus, manufacturer: '', serialNumber: '', imageUrl: '' });
+  const [aiImgLoading, setAiImgLoading] = useState(false);
 
   const fetchEquipments = async () => {
     setLoading(true);
