@@ -14,6 +14,7 @@ import RoleGuard from "./components/auth/RoleGuard";
 
 const Dashboard = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Equipements = lazy(() => import("./pages/Equipements"));
 const Equipements3D = lazy(() => import("./pages/Equipements3D"));
 const Interventions = lazy(() => import("./pages/Interventions"));
