@@ -940,6 +940,16 @@ const Auth = () => {
 
       <LoginOverlay visible={overlayVisible} onDone={handleOverlayDone} />
 
+      <OtpVerificationModal
+        email={email}
+        purpose={otpPurpose}
+        open={otpOpen}
+        onClose={() => setOtpOpen(false)}
+        onVerified={handleOtpVerified}
+        title={otpPurpose === 'password_reset' ? 'Réinitialisation du mot de passe' : 'Authentification à deux facteurs'}
+        subtitle={otpPurpose === 'password_reset' ? "Entrez le code reçu pour réinitialiser votre mot de passe" : "Entrez le code à 6 chiffres reçu par email"}
+      />
+
       {/* Role Card After Login */}
       <AnimatePresence>
         {showRoleCard && (
