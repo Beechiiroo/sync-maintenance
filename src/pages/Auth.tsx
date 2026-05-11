@@ -521,6 +521,9 @@ const Auth = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [showBiometric, setShowBiometric] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpPurpose, setOtpPurpose] = useState<'2fa_login' | 'password_reset'>('2fa_login');
+  const [forgotLoading, setForgotLoading] = useState(false);
   const pwStrength = getPasswordStrength(password);
 
   // Voice greeting on lamp toggle
