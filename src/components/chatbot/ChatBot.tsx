@@ -109,9 +109,46 @@ const ChatBot = () => {
     setMessages([{ role: 'assistant', content: WELCOME_MSG[lang] || WELCOME_MSG.fr }]);
   };
 
+  const generateImage = async (prompt: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-equipment-image', {
+        body: { prompt, name: prompt.slice(0, 60) },
+      });
+      if (error) throw error;
+      const imageUrl = (data as any)?.imageUrl;
+      if (!imageUrl) throw new Error('no image');
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `🎨 Image générée pour : *${prompt}*`,
+        imageUrl,
+      }]);
+    } catch (e: any) {
+      const msg = e?.context?.status === 402
+        ? '⚠️ Crédits IA épuisés. Contactez l\'administrateur.'
+        : '❌ Impossible de générer l\'image. Réessayez.';
+      setMessages(prev => [...prev, { role: 'assistant', content: msg }]);
+    } finally {
+      setLoading(false);
+      inputRef.current?.focus();
+    }
+  };
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
-    const userMsg: Message = { role: 'user', content: text.trim() };
+    const trimmed = text.trim();
+    const userMsg: Message = { role: 'user', content: trimmed };
+
+    // Image intent detection
+    const match = trimmed.match(IMAGE_TRIGGERS);
+    if (match) {
+      const prompt = trimmed.replace(IMAGE_TRIGGERS, '').trim() || 'industrial equipment';
+      setMessages(prev => [...prev, userMsg]);
+      setInput('');
+      await generateImage(prompt);
+      return;
+    }
+
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
     setInput('');
