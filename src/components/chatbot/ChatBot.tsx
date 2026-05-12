@@ -366,6 +366,20 @@ const ChatBot = () => {
                 />
                 <motion.button
                   type="button"
+                  onClick={() => {
+                    if (input.trim()) sendMessage(`/image ${input.trim()}`);
+                    else setInput('/image ');
+                    inputRef.current?.focus();
+                  }}
+                  whileTap={{ scale: 0.9 }}
+                  disabled={loading}
+                  title={t('chatbot.generateImage', 'Générer une image (préfixe /image)')}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border border-border text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all disabled:opacity-40"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                </motion.button>
+                <motion.button
+                  type="button"
                   onClick={listening ? stopListening : startListening}
                   whileTap={{ scale: 0.9 }}
                   className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${
