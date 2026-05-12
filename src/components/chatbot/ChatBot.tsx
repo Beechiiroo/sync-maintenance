@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Bot, User, Minimize2, Mic, MicOff, Volume2, Sparkles, RotateCcw, Trash2 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Minimize2, Mic, MicOff, Volume2, Sparkles, RotateCcw, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '@/integrations/supabase/client';
 
-type Message = { role: 'user' | 'assistant'; content: string };
+type Message = { role: 'user' | 'assistant'; content: string; imageUrl?: string };
+
+const IMAGE_TRIGGERS = /^\s*(\/image|\/img|génère\s+(une\s+)?image|generate\s+(an?\s+)?image|dessine|draw|أنشئ\s+صورة|ارسم)\s*:?\s*/i;
 
 const SUGGESTIONS_BY_LANG: Record<string, string[]> = {
   fr: [
