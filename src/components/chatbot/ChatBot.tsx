@@ -306,6 +306,11 @@ const ChatBot = () => {
                         <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:my-1.5 [&_h2]:my-1 [&_h3]:my-1 [&_strong]:text-foreground [&_p]:text-foreground [&_li]:text-foreground [&_code]:text-xs [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded-lg [&_pre]:text-xs [&_blockquote]:border-primary/30 [&_blockquote]:text-muted-foreground">
                           <ReactMarkdown>{msg.content}</ReactMarkdown>
                         </div>
+                        {msg.imageUrl && (
+                          <a href={msg.imageUrl} target="_blank" rel="noreferrer" className="block mt-2">
+                            <img src={msg.imageUrl} alt="Generated" className="rounded-lg border border-border max-w-full" loading="lazy" />
+                          </a>
+                        )}
                         <button onClick={() => speak(msg.content)}
                           className="mt-1.5 opacity-40 hover:opacity-100 transition-opacity flex items-center gap-1 text-xs text-muted-foreground"
                           title="Écouter">
