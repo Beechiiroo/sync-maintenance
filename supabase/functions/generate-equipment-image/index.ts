@@ -38,9 +38,28 @@ serve(async (req) => {
     }
 
     const data = await r.json();
-    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    const msg = data?.choices?.[0]?.message;
+    let imageUrl: string | undefined =
+      msg?.images?.[0]?.image_url?.url ||
+      msg?.images?.[0]?.url ||
+      (typeof msg?.images?.[0] === "string" ? msg.images[0] : undefined);
+
+    // Fallback: scan content array for image parts
+    if (!imageUrl && Array.isArray(msg?.content)) {
+      for (const part of msg.content) {
+        const u = part?.image_url?.url || part?.url;
+        if (u && typeof u === "string" && u.startsWith("data:image")) { imageUrl = u; break; }
+      }
+    }
+    // Fallback: scan content string for data URI
+    if (!imageUrl && typeof msg?.content === "string") {
+      const m = msg.content.match(/data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+/);
+      if (m) imageUrl = m[0];
+    }
+
     if (!imageUrl) {
-      return new Response(JSON.stringify({ error: "No image generated" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.error("No image in AI response:", JSON.stringify(data).slice(0, 1000));
+      return new Response(JSON.stringify({ error: "No image generated", debug: JSON.stringify(data).slice(0, 500) }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     return new Response(JSON.stringify({ imageUrl }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
