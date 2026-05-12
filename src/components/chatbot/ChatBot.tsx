@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Bot, User, Minimize2, Mic, MicOff, Volume2, Sparkles, RotateCcw, Trash2 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Minimize2, Mic, MicOff, Volume2, Sparkles, RotateCcw, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '@/integrations/supabase/client';
 
-type Message = { role: 'user' | 'assistant'; content: string };
+type Message = { role: 'user' | 'assistant'; content: string; imageUrl?: string };
+
+const IMAGE_TRIGGERS = /^\s*(\/image|\/img|génère\s+(une\s+)?image|generate\s+(an?\s+)?image|dessine|draw|أنشئ\s+صورة|ارسم)\s*:?\s*/i;
 
 const SUGGESTIONS_BY_LANG: Record<string, string[]> = {
   fr: [
@@ -106,9 +109,46 @@ const ChatBot = () => {
     setMessages([{ role: 'assistant', content: WELCOME_MSG[lang] || WELCOME_MSG.fr }]);
   };
 
+  const generateImage = async (prompt: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-equipment-image', {
+        body: { prompt, name: prompt.slice(0, 60) },
+      });
+      if (error) throw error;
+      const imageUrl = (data as any)?.imageUrl;
+      if (!imageUrl) throw new Error('no image');
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `🎨 Image générée pour : *${prompt}*`,
+        imageUrl,
+      }]);
+    } catch (e: any) {
+      const msg = e?.context?.status === 402
+        ? '⚠️ Crédits IA épuisés. Contactez l\'administrateur.'
+        : '❌ Impossible de générer l\'image. Réessayez.';
+      setMessages(prev => [...prev, { role: 'assistant', content: msg }]);
+    } finally {
+      setLoading(false);
+      inputRef.current?.focus();
+    }
+  };
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
-    const userMsg: Message = { role: 'user', content: text.trim() };
+    const trimmed = text.trim();
+    const userMsg: Message = { role: 'user', content: trimmed };
+
+    // Image intent detection
+    const match = trimmed.match(IMAGE_TRIGGERS);
+    if (match) {
+      const prompt = trimmed.replace(IMAGE_TRIGGERS, '').trim() || 'industrial equipment';
+      setMessages(prev => [...prev, userMsg]);
+      setInput('');
+      await generateImage(prompt);
+      return;
+    }
+
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
     setInput('');
@@ -266,6 +306,11 @@ const ChatBot = () => {
                         <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:my-1.5 [&_h2]:my-1 [&_h3]:my-1 [&_strong]:text-foreground [&_p]:text-foreground [&_li]:text-foreground [&_code]:text-xs [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded-lg [&_pre]:text-xs [&_blockquote]:border-primary/30 [&_blockquote]:text-muted-foreground">
                           <ReactMarkdown>{msg.content}</ReactMarkdown>
                         </div>
+                        {msg.imageUrl && (
+                          <a href={msg.imageUrl} target="_blank" rel="noreferrer" className="block mt-2">
+                            <img src={msg.imageUrl} alt="Generated" className="rounded-lg border border-border max-w-full" loading="lazy" />
+                          </a>
+                        )}
                         <button onClick={() => speak(msg.content)}
                           className="mt-1.5 opacity-40 hover:opacity-100 transition-opacity flex items-center gap-1 text-xs text-muted-foreground"
                           title="Écouter">
@@ -319,6 +364,20 @@ const ChatBot = () => {
                   disabled={loading}
                   dir={lang === 'ar' ? 'rtl' : 'ltr'}
                 />
+                <motion.button
+                  type="button"
+                  onClick={() => {
+                    if (input.trim()) sendMessage(`/image ${input.trim()}`);
+                    else setInput('/image ');
+                    inputRef.current?.focus();
+                  }}
+                  whileTap={{ scale: 0.9 }}
+                  disabled={loading}
+                  title={t('chatbot.generateImage', 'Générer une image (préfixe /image)')}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border border-border text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all disabled:opacity-40"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                </motion.button>
                 <motion.button
                   type="button"
                   onClick={listening ? stopListening : startListening}
