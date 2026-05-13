@@ -7,6 +7,13 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+function json(payload: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 async function sha256(str: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
@@ -17,9 +24,17 @@ serve(async (req) => {
   try {
     const { email, purpose = "2fa_login" } = await req.json();
     if (!email || typeof email !== "string" || !["2fa_login", "password_reset"].includes(purpose)) {
-      return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return json({ ok: false, error: "Invalid input" });
     }
     const normalizedEmail = email.trim().toLowerCase();
+
+    // Resend is the current delivery provider for this custom 6-digit OTP flow.
+    // When it is missing or invalid, return a handled response so the app shows
+    // a normal toast instead of surfacing an Edge Function 502 runtime error.
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      return json({ ok: false, error: "Service email non configuré. Configurez un domaine email pour envoyer les codes." });
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -35,7 +50,7 @@ serve(async (req) => {
       .eq("purpose", purpose)
       .gte("created_at", since);
     if ((count ?? 0) >= 3) {
-      return new Response(JSON.stringify({ error: "Trop de demandes. Réessayez dans quelques minutes." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return json({ ok: false, error: "Trop de demandes. Réessayez dans quelques minutes." });
     }
 
     const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -46,12 +61,6 @@ serve(async (req) => {
       .from("email_otp_codes")
       .insert({ email: normalizedEmail, code_hash: codeHash, purpose, expires_at: expiresAt });
     if (insertError) throw insertError;
-
-    // Send via Resend
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: "Email service not configured" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
 
     const subject = purpose === "password_reset"
       ? "Sync Maintenance — Code de réinitialisation"
@@ -87,12 +96,15 @@ serve(async (req) => {
     if (!r.ok) {
       const t = await r.text();
       console.error("Resend error:", r.status, t);
-      return new Response(JSON.stringify({ error: "Échec d'envoi de l'email" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const message = r.status === 401
+        ? "Service email mal configuré. Configurez un domaine email valide pour envoyer les codes."
+        : "Échec d'envoi de l'email. Réessayez dans quelques instants.";
+      return json({ ok: false, error: message });
     }
 
-    return new Response(JSON.stringify({ ok: true, expiresIn: 600 }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return json({ ok: true, expiresIn: 600 });
   } catch (e) {
     console.error("send-2fa-code error:", e);
-    return new Response(JSON.stringify({ error: "Server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return json({ ok: false, error: "Erreur serveur" });
   }
 });
