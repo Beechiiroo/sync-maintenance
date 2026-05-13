@@ -96,12 +96,15 @@ serve(async (req) => {
     if (!r.ok) {
       const t = await r.text();
       console.error("Resend error:", r.status, t);
-      return new Response(JSON.stringify({ error: "Échec d'envoi de l'email" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const message = r.status === 401
+        ? "Service email mal configuré. Configurez un domaine email valide pour envoyer les codes."
+        : "Échec d'envoi de l'email. Réessayez dans quelques instants.";
+      return json({ ok: false, error: message });
     }
 
-    return new Response(JSON.stringify({ ok: true, expiresIn: 600 }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return json({ ok: true, expiresIn: 600 });
   } catch (e) {
     console.error("send-2fa-code error:", e);
-    return new Response(JSON.stringify({ error: "Server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return json({ ok: false, error: "Erreur serveur" });
   }
 });
