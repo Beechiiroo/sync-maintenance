@@ -16,16 +16,23 @@ export default function ResetPassword() {
   useEffect(() => {
     const tokenHash = params.get("token_hash");
     const type = params.get("type");
-    if (!tokenHash || type !== "recovery") {
-      toast({ title: "Lien invalide", description: "Le lien de réinitialisation est invalide ou expiré.", variant: "destructive" });
-      navigate("/auth");
-      return;
-    }
     (async () => {
-      const { error } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+      if (tokenHash && type === "recovery") {
+        const { error } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+        setVerifying(false);
+        if (error) {
+          toast({ title: "Lien invalide", description: error.message, variant: "destructive" });
+          navigate("/auth");
+          return;
+        }
+        setReady(true);
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
       setVerifying(false);
-      if (error) {
-        toast({ title: "Lien invalide", description: error.message, variant: "destructive" });
+      if (!data.session) {
+        toast({ title: "Lien invalide", description: "Le lien de réinitialisation est invalide ou expiré.", variant: "destructive" });
         navigate("/auth");
         return;
       }

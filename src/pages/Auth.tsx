@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { OtpVerificationModal } from '@/components/auth/OtpVerificationModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type AccessLevel = 'admin' | 'technician' | 'assistant' | 'client';
@@ -521,8 +520,6 @@ const Auth = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [showBiometric, setShowBiometric] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [otpOpen, setOtpOpen] = useState(false);
-  const [otpPurpose, setOtpPurpose] = useState<'2fa_login' | 'password_reset'>('2fa_login');
   const [forgotLoading, setForgotLoading] = useState(false);
   const pwStrength = getPasswordStrength(password);
 
@@ -560,20 +557,6 @@ const Auth = () => {
     }, 1500);
   };
 
-  const sendOtpAndOpen = useCallback(async (targetEmail: string, purpose: '2fa_login' | 'password_reset') => {
-    const { data, error } = await supabase.functions.invoke('send-2fa-code', {
-      body: { email: targetEmail, purpose },
-    });
-    if (error || !data?.ok) {
-      toast({ title: 'Erreur', description: data?.error || error?.message || "Échec d'envoi du code", variant: 'destructive' });
-      return false;
-    }
-    setOtpPurpose(purpose);
-    setOtpOpen(true);
-    toast({ title: 'Code envoyé', description: `Vérifiez votre boîte mail (${targetEmail})` });
-    return true;
-  }, [toast]);
-
   const handleOverlayDone = useCallback(async () => {
     setOverlayVisible(false);
     try {
@@ -583,45 +566,17 @@ const Auth = () => {
           options: { data: { full_name: fullName || email.split('@')[0] }, emailRedirectTo: window.location.origin }
         });
         if (error) { toast({ title: "Erreur d'inscription", description: error.message, variant: 'destructive' }); return; }
-        // Validate password works, then sign out and require 2FA email code
-        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-        if (loginError) {
-          toast({ title: 'Inscription créée', description: "Vérifiez votre email puis connectez-vous." });
-          setAuthMode('login');
-          return;
-        }
-        await supabase.auth.signOut();
-        await sendOtpAndOpen(email, '2fa_login');
+        toast({ title: 'Inscription créée', description: "Vérifiez votre email puis connectez-vous." });
+        setAuthMode('login');
         return;
       }
-      // Login: validate password, then trigger 2FA
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { toast({ title: "Erreur d'authentification", description: error.message, variant: 'destructive' }); return; }
-      await supabase.auth.signOut();
-      await sendOtpAndOpen(email, '2fa_login');
+      toast({ title: '✓ Authentifié', description: 'Bienvenue dans le centre de commande.' });
     } catch (err: any) {
       toast({ title: 'Erreur', description: err?.message || 'Erreur inattendue', variant: 'destructive' });
     }
-  }, [email, password, fullName, authMode, toast, sendOtpAndOpen]);
-
-  const handleOtpVerified = useCallback(async (data: { hashed_token: string; type: 'magiclink' | 'recovery'; email: string }) => {
-    setOtpOpen(false);
-    if (data.type === 'recovery') {
-      // Move user to reset-password page with the token
-      navigate(`/reset-password?token_hash=${encodeURIComponent(data.hashed_token)}&type=recovery&email=${encodeURIComponent(data.email)}`);
-      return;
-    }
-    const { error } = await supabase.auth.verifyOtp({
-      type: 'magiclink',
-      token_hash: data.hashed_token,
-    });
-    if (error) {
-      toast({ title: 'Session', description: error.message, variant: 'destructive' });
-      return;
-    }
-    toast({ title: '✓ Authentifié', description: 'Bienvenue dans le centre de commande.' });
-    navigate('/');
-  }, [navigate, toast]);
+  }, [email, password, fullName, authMode, toast]);
 
   const handleForgotPassword = useCallback(async () => {
     if (!email) {
@@ -630,11 +585,18 @@ const Auth = () => {
     }
     setForgotLoading(true);
     try {
-      await sendOtpAndOpen(email, 'password_reset');
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Email envoyé', description: 'Consultez votre boîte mail pour réinitialiser le mot de passe.' });
     } finally {
       setForgotLoading(false);
     }
-  }, [email, sendOtpAndOpen, toast]);
+  }, [email, toast]);
 
   const ACCESS_LEVELS: { key: AccessLevel; label: string; icon: string; desc: string }[] = [
     { key: 'admin', label: 'Admin', icon: '👔', desc: 'Accès complet' },
@@ -939,16 +901,6 @@ const Auth = () => {
       </div>
 
       <LoginOverlay visible={overlayVisible} onDone={handleOverlayDone} />
-
-      <OtpVerificationModal
-        email={email}
-        purpose={otpPurpose}
-        open={otpOpen}
-        onClose={() => setOtpOpen(false)}
-        onVerified={handleOtpVerified}
-        title={otpPurpose === 'password_reset' ? 'Réinitialisation du mot de passe' : 'Authentification à deux facteurs'}
-        subtitle={otpPurpose === 'password_reset' ? "Entrez le code reçu pour réinitialiser votre mot de passe" : "Entrez le code à 6 chiffres reçu par email"}
-      />
 
       {/* Role Card After Login */}
       <AnimatePresence>
