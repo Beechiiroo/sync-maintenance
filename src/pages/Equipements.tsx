@@ -1,11 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download, ImageIcon, Loader2 } from 'lucide-react';
+import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download, ImageIcon, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import StatusBadge from '@/components/common/StatusBadge';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
 type EquipmentStatus = 'operational' | 'maintenance' | 'critical' | 'warning';
