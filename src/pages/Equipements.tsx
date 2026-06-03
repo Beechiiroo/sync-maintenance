@@ -391,23 +391,25 @@ const Equipements = () => {
       {/* Add Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="glass-card-strong w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeFormModal}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="glass-card-strong w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-foreground">Ajouter un équipement</h2>
-                <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+                <h2 className="text-base font-semibold text-foreground">{editingEq ? t('equipment.modal.edit_title') : t('equipment.modal.add_title')}</h2>
+                <button onClick={closeFormModal} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Photo de l'équipement</label>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.photo')}</label>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                  <div onClick={() => fileInputRef.current?.click()} className="w-full h-28 rounded-lg border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors overflow-hidden">
-                    {form.imageUrl ? (
+                  <div onClick={() => !uploadingImg && fileInputRef.current?.click()} className="w-full h-28 rounded-lg border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors overflow-hidden">
+                    {uploadingImg ? (
+                      <><Loader2 className="h-5 w-5 animate-spin text-primary mb-1" /><p className="text-xs text-muted-foreground">{t('equipment.form.uploading')}</p></>
+                    ) : form.imageUrl ? (
                       <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <>
                         <ImageIcon className="h-6 w-6 text-muted-foreground/50 mb-1" />
-                        <p className="text-xs text-muted-foreground">Cliquez pour uploader une image</p>
+                        <p className="text-xs text-muted-foreground">{t('equipment.form.upload_hint')}</p>
                       </>
                     )}
                   </div>
@@ -415,39 +417,39 @@ const Equipements = () => {
                     type="button"
                     disabled={aiImgLoading || !form.name}
                     onClick={async () => {
-                      if (!form.name) { toast({ title: 'Nom requis', description: "Saisissez d'abord le nom de l'équipement.", variant: 'destructive' }); return; }
+                      if (!form.name) { toast({ title: t('equipment.errors.name_required'), variant: 'destructive' }); return; }
                       setAiImgLoading(true);
                       try {
                         const { data, error } = await supabase.functions.invoke('generate-equipment-image', {
                           body: { name: form.name, category: form.category, manufacturer: form.manufacturer },
                         });
                         if (error || !data?.imageUrl) {
-                          toast({ title: 'Échec génération IA', description: data?.error || error?.message || 'Erreur', variant: 'destructive' });
+                          toast({ title: t('equipment.errors.ai_failed'), description: data?.error || error?.message || 'Error', variant: 'destructive' });
                           return;
                         }
                         setForm(p => ({ ...p, imageUrl: data.imageUrl }));
-                        toast({ title: '✓ Image générée', description: 'Image IA ajoutée à l\'équipement.' });
+                        toast({ title: t('equipment.toast.ai_generated') });
                       } finally { setAiImgLoading(false); }
                     }}
                     className="mt-2 w-full h-9 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 hover:from-primary/30 hover:to-accent/30 transition-all disabled:opacity-50"
                   >
                     {aiImgLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span>✨</span>}
-                    {aiImgLoading ? 'Génération IA...' : "Générer l'image avec l'IA"}
+                    {aiImgLoading ? t('equipment.form.ai_generating') : t('equipment.form.ai_generate')}
                   </button>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nom de l'équipement *</label>
-                  <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Ex: Compresseur XL-500" />
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.name')} *</label>
+                  <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder={t('equipment.form.name_placeholder')} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Catégorie</label>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.category')}</label>
                     <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                       {categories.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Localisation</label>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.location')}</label>
                     <select value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                       {locations.map(l => <option key={l}>{l}</option>)}
                     </select>
@@ -455,28 +457,28 @@ const Equipements = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Fabricant</label>
-                    <input value={form.manufacturer} onChange={e => setForm(p => ({ ...p, manufacturer: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Marque..." />
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.manufacturer')}</label>
+                    <input value={form.manufacturer} onChange={e => setForm(p => ({ ...p, manufacturer: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder={t('equipment.form.manufacturer_placeholder')} />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">N° de série</label>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.serial')}</label>
                     <input value={form.serialNumber} onChange={e => setForm(p => ({ ...p, serialNumber: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="SN-..." />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Statut initial</label>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.status')}</label>
                   <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as EquipmentStatus }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <option value="operational">En service</option>
-                    <option value="maintenance">En maintenance</option>
-                    <option value="warning">Attention requise</option>
-                    <option value="critical">En panne</option>
+                    <option value="operational">{t('equipment.status.operational')}</option>
+                    <option value="maintenance">{t('equipment.status.maintenance')}</option>
+                    <option value="warning">{t('equipment.status.warning')}</option>
+                    <option value="critical">{t('equipment.status.critical')}</option>
                   </select>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button onClick={() => setShowAddModal(false)} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">Annuler</button>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAdd} disabled={submitting}
+                  <button onClick={closeFormModal} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">{t('common.cancel')}</button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSave} disabled={submitting}
                     className="flex-1 h-10 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 disabled:opacity-50">
-                    {submitting ? 'Ajout...' : 'Ajouter'}
+                    {submitting ? t('common.saving') : (editingEq ? t('common.save') : t('equipment.add'))}
                   </motion.button>
                 </div>
               </div>
