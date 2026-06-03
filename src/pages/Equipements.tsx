@@ -43,23 +43,35 @@ const formatDate = (d: string | null) => {
 
 const Equipements = () => {
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
+  const { isAdmin, isTechnician } = useUserRole();
+  const canManage = isAdmin || isTechnician;
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEq, setEditingEq] = useState<Equipment | null>(null);
+  const [deletingEq, setDeletingEq] = useState<Equipment | null>(null);
   const [selectedEq, setSelectedEq] = useState<Equipment | null>(null);
   const [qrEquipment, setQrEquipment] = useState<Equipment | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanIntervalRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ name: '', category: categories[0], location: locations[0], status: 'operational' as EquipmentStatus, manufacturer: '', serialNumber: '', imageUrl: '' });
   const [aiImgLoading, setAiImgLoading] = useState(false);
+
+  const formatDate = (d: string | null) => {
+    if (!d) return '-';
+    const locale = i18n.language === 'ar' ? 'ar-MA' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
+    return new Date(d).toLocaleDateString(locale);
+  };
 
   const fetchEquipments = async () => {
     setLoading(true);
