@@ -36,10 +36,6 @@ const locations = ['Atelier A', 'Atelier B', 'Atelier C', 'Atelier D', 'Zone de 
 const healthColor = (score: number) => score >= 80 ? 'text-success' : score >= 50 ? 'text-warning' : 'text-destructive';
 const healthBg = (score: number) => score >= 80 ? 'bg-success' : score >= 50 ? 'bg-warning' : 'bg-destructive';
 
-const formatDate = (d: string | null) => {
-  if (!d) return '-';
-  return new Date(d).toLocaleDateString('fr-FR');
-};
 
 const Equipements = () => {
   const { toast } = useToast();
