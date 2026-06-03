@@ -124,16 +124,36 @@ const Equipements = () => {
     critical: equipments.filter(e => e.status === 'critical').length,
   };
 
-  const handleAdd = async () => {
+  const resetForm = () => setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '', imageUrl: '' });
+
+  const openEdit = (eq: Equipment) => {
+    setEditingEq(eq);
+    setForm({
+      name: eq.name,
+      category: eq.category || categories[0],
+      location: eq.location || locations[0],
+      status: eq.status,
+      manufacturer: eq.manufacturer || '',
+      serialNumber: eq.serialNumber || '',
+      imageUrl: eq.imageUrl || '',
+    });
+    setShowAddModal(true);
+  };
+
+  const closeFormModal = () => {
+    setShowAddModal(false);
+    setEditingEq(null);
+    resetForm();
+  };
+
+  const handleSave = async () => {
     if (!form.name.trim()) {
-      toast({ title: 'Erreur', description: 'Le nom de l\'équipement est requis.', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('equipment.errors.name_required'), variant: 'destructive' });
       return;
     }
     setSubmitting(true);
-
     const { data: userData } = await supabase.auth.getUser();
-
-    const { error } = await supabase.from('equipment').insert({
+    const payload = {
       name: form.name,
       category: form.category,
       location: form.location,
@@ -142,26 +162,59 @@ const Equipements = () => {
       serial_number: form.serialNumber || null,
       image_url: form.imageUrl || null,
       health_score: form.status === 'operational' ? 90 : form.status === 'warning' ? 55 : form.status === 'critical' ? 25 : 45,
-      created_by: userData?.user?.id || null,
-    });
+    };
+    const { error } = editingEq
+      ? await supabase.from('equipment').update(payload).eq('id', editingEq.dbId)
+      : await supabase.from('equipment').insert({ ...payload, created_by: userData?.user?.id || null });
 
     setSubmitting(false);
     if (error) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+      toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
       return;
     }
-
-    setShowAddModal(false);
-    setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '', imageUrl: '' });
-    toast({ title: 'Équipement ajouté', description: `${form.name} a été ajouté avec succès.` });
+    toast({
+      title: editingEq ? t('equipment.toast.updated') : t('equipment.toast.added'),
+      description: form.name,
+    });
+    closeFormModal();
     fetchEquipments();
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDelete = async () => {
+    if (!deletingEq) return;
+    setSubmitting(true);
+    const { error } = await supabase.from('equipment').delete().eq('id', deletingEq.dbId);
+    setSubmitting(false);
+    if (error) {
+      toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: t('equipment.toast.deleted'), description: deletingEq.name });
+    setDeletingEq(null);
+    fetchEquipments();
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setForm(p => ({ ...p, imageUrl: url }));
+    setUploadingImg(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id || 'anon';
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${uid}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('equipment-images').upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) {
+        toast({ title: t('common.error'), description: upErr.message, variant: 'destructive' });
+        return;
+      }
+      const { data: signed } = await supabase.storage.from('equipment-images').createSignedUrl(path, 3600);
+      // Store the path in DB but use signed URL for preview
+      setForm(p => ({ ...p, imageUrl: signed?.signedUrl || path }));
+      toast({ title: t('equipment.toast.image_uploaded') });
+    } finally {
+      setUploadingImg(false);
+    }
   };
 
   const downloadQR = (eq: Equipment) => {
