@@ -14,6 +14,7 @@ type EquipmentStatus = 'operational' | 'maintenance' | 'critical' | 'warning';
 
 interface Equipment {
   id: string;
+  dbId: string;
   name: string;
   category: string;
   location: string;
