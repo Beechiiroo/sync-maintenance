@@ -79,7 +79,30 @@
     "admin": "Admin",
     "maintenanceManager": "Responsable maintenance",
     "notifications": "Notifications",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "delete": "Supprimer",
+    "error": "Erreur"
+  },
+  "equipment": {
+    "title": "Équipements",
+    "count": "{{count}} équipement(s) enregistré(s)",
+    "add": "Ajouter",
+    "scan_qr": "Scanner QR",
+    "all": "Tous",
+    "loading": "Chargement des équipements...",
+    "search_placeholder": "Rechercher un équipement...",
+    "status": { "operational": "En service", "maintenance": "Maintenance", "warning": "Attention", "critical": "En panne" },
+    "col": { "equipment": "Équipement", "category": "Catégorie", "location": "Localisation", "health": "Santé", "status": "Statut", "mtbf": "MTBF", "next_maint": "Prochaine maint." },
+    "actions": { "qr": "QR Code", "edit": "Modifier", "delete": "Supprimer" },
+    "empty": { "title": "Aucun équipement trouvé", "subtitle": "Modifiez vos filtres ou ajoutez un nouvel équipement" },
+    "modal": { "add_title": "Ajouter un équipement", "edit_title": "Modifier l'équipement" },
+    "form": { "photo": "Photo de l'équipement", "upload_hint": "Cliquez pour uploader une image", "uploading": "Téléversement...", "name": "Nom de l'équipement", "name_placeholder": "Ex: Compresseur XL-500", "category": "Catégorie", "location": "Localisation", "manufacturer": "Fabricant", "manufacturer_placeholder": "Marque...", "serial": "N° de série", "status": "Statut initial", "ai_generate": "Générer l'image avec l'IA", "ai_generating": "Génération IA..." },
+    "errors": { "name_required": "Le nom de l'équipement est requis.", "ai_failed": "Échec génération IA" },
+    "toast": { "added": "Équipement ajouté", "updated": "Équipement modifié", "deleted": "Équipement supprimé", "image_uploaded": "Image téléversée", "ai_generated": "✓ Image IA générée" },
+    "delete": { "title": "Supprimer l'équipement ?", "confirm": "Cette action supprimera définitivement « {{name}} ». Continuer ?" }
   },
   "chatbot": {
     "title": "Assistant GMAO",
