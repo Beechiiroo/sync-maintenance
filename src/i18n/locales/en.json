@@ -79,7 +79,30 @@
     "admin": "Admin",
     "maintenanceManager": "Maintenance Manager",
     "notifications": "Notifications",
-    "logout": "Sign Out"
+    "logout": "Sign Out",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "error": "Error"
+  },
+  "equipment": {
+    "title": "Equipment",
+    "count": "{{count}} equipment registered",
+    "add": "Add",
+    "scan_qr": "Scan QR",
+    "all": "All",
+    "loading": "Loading equipment...",
+    "search_placeholder": "Search equipment...",
+    "status": { "operational": "Operational", "maintenance": "Maintenance", "warning": "Warning", "critical": "Critical" },
+    "col": { "equipment": "Equipment", "category": "Category", "location": "Location", "health": "Health", "status": "Status", "mtbf": "MTBF", "next_maint": "Next maint." },
+    "actions": { "qr": "QR Code", "edit": "Edit", "delete": "Delete" },
+    "empty": { "title": "No equipment found", "subtitle": "Adjust your filters or add new equipment" },
+    "modal": { "add_title": "Add equipment", "edit_title": "Edit equipment" },
+    "form": { "photo": "Equipment photo", "upload_hint": "Click to upload an image", "uploading": "Uploading...", "name": "Equipment name", "name_placeholder": "e.g.: Compressor XL-500", "category": "Category", "location": "Location", "manufacturer": "Manufacturer", "manufacturer_placeholder": "Brand...", "serial": "Serial number", "status": "Initial status", "ai_generate": "Generate image with AI", "ai_generating": "Generating..." },
+    "errors": { "name_required": "Equipment name is required.", "ai_failed": "AI generation failed" },
+    "toast": { "added": "Equipment added", "updated": "Equipment updated", "deleted": "Equipment deleted", "image_uploaded": "Image uploaded", "ai_generated": "✓ AI image generated" },
+    "delete": { "title": "Delete equipment?", "confirm": "This will permanently delete \"{{name}}\". Continue?" }
   },
   "chatbot": {
     "title": "CMMS Assistant",

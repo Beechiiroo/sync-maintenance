@@ -1,17 +1,20 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download, ImageIcon, Loader2 } from 'lucide-react';
+import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, AlertTriangle, CheckCircle2, Wrench, Activity, Camera, Download, ImageIcon, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import StatusBadge from '@/components/common/StatusBadge';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
 type EquipmentStatus = 'operational' | 'maintenance' | 'critical' | 'warning';
 
 interface Equipment {
   id: string;
+  dbId: string;
   name: string;
   category: string;
   location: string;
@@ -33,30 +36,38 @@ const locations = ['Atelier A', 'Atelier B', 'Atelier C', 'Atelier D', 'Zone de 
 const healthColor = (score: number) => score >= 80 ? 'text-success' : score >= 50 ? 'text-warning' : 'text-destructive';
 const healthBg = (score: number) => score >= 80 ? 'bg-success' : score >= 50 ? 'bg-warning' : 'bg-destructive';
 
-const formatDate = (d: string | null) => {
-  if (!d) return '-';
-  return new Date(d).toLocaleDateString('fr-FR');
-};
 
 const Equipements = () => {
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
+  const { isAdmin, isTechnician } = useUserRole();
+  const canManage = isAdmin || isTechnician;
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEq, setEditingEq] = useState<Equipment | null>(null);
+  const [deletingEq, setDeletingEq] = useState<Equipment | null>(null);
   const [selectedEq, setSelectedEq] = useState<Equipment | null>(null);
   const [qrEquipment, setQrEquipment] = useState<Equipment | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanIntervalRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ name: '', category: categories[0], location: locations[0], status: 'operational' as EquipmentStatus, manufacturer: '', serialNumber: '', imageUrl: '' });
   const [aiImgLoading, setAiImgLoading] = useState(false);
+
+  const formatDate = (d: string | null) => {
+    if (!d) return '-';
+    const locale = i18n.language === 'ar' ? 'ar-MA' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
+    return new Date(d).toLocaleDateString(locale);
+  };
 
   const fetchEquipments = async () => {
     setLoading(true);
@@ -71,21 +82,28 @@ const Equipements = () => {
       return;
     }
 
-    const mapped: Equipment[] = (data || []).map(eq => ({
-      id: eq.id.substring(0, 8).toUpperCase(),
-      dbId: eq.id,
-      name: eq.name,
-      category: eq.category,
-      location: eq.location,
-      status: eq.status as EquipmentStatus,
-      lastMaintenance: formatDate(eq.last_maintenance),
-      nextMaintenance: formatDate(eq.next_maintenance),
-      mtbf: eq.mtbf_hours ? `${eq.mtbf_hours}h` : '-',
-      healthScore: eq.health_score ?? 100,
-      serialNumber: eq.serial_number ?? undefined,
-      manufacturer: eq.manufacturer ?? undefined,
-      imageUrl: eq.image_url ?? undefined,
-      _dbId: eq.id,
+    const mapped: Equipment[] = await Promise.all((data || []).map(async eq => {
+      let imageUrl: string | undefined = eq.image_url ?? undefined;
+      // If stored as storage path (no http), resolve signed URL
+      if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('blob:') && !imageUrl.startsWith('data:')) {
+        const { data: signed } = await supabase.storage.from('equipment-images').createSignedUrl(imageUrl, 3600);
+        imageUrl = signed?.signedUrl ?? undefined;
+      }
+      return {
+        id: eq.id.substring(0, 8).toUpperCase(),
+        dbId: eq.id,
+        name: eq.name,
+        category: eq.category,
+        location: eq.location,
+        status: eq.status as EquipmentStatus,
+        lastMaintenance: formatDate(eq.last_maintenance),
+        nextMaintenance: formatDate(eq.next_maintenance),
+        mtbf: eq.mtbf_hours ? `${eq.mtbf_hours}h` : '-',
+        healthScore: eq.health_score ?? 100,
+        serialNumber: eq.serial_number ?? undefined,
+        manufacturer: eq.manufacturer ?? undefined,
+        imageUrl,
+      };
     }));
     setEquipments(mapped);
     setLoading(false);
@@ -106,16 +124,36 @@ const Equipements = () => {
     critical: equipments.filter(e => e.status === 'critical').length,
   };
 
-  const handleAdd = async () => {
+  const resetForm = () => setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '', imageUrl: '' });
+
+  const openEdit = (eq: Equipment) => {
+    setEditingEq(eq);
+    setForm({
+      name: eq.name,
+      category: eq.category || categories[0],
+      location: eq.location || locations[0],
+      status: eq.status,
+      manufacturer: eq.manufacturer || '',
+      serialNumber: eq.serialNumber || '',
+      imageUrl: eq.imageUrl || '',
+    });
+    setShowAddModal(true);
+  };
+
+  const closeFormModal = () => {
+    setShowAddModal(false);
+    setEditingEq(null);
+    resetForm();
+  };
+
+  const handleSave = async () => {
     if (!form.name.trim()) {
-      toast({ title: 'Erreur', description: 'Le nom de l\'équipement est requis.', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('equipment.errors.name_required'), variant: 'destructive' });
       return;
     }
     setSubmitting(true);
-
     const { data: userData } = await supabase.auth.getUser();
-
-    const { error } = await supabase.from('equipment').insert({
+    const payload = {
       name: form.name,
       category: form.category,
       location: form.location,
@@ -124,26 +162,59 @@ const Equipements = () => {
       serial_number: form.serialNumber || null,
       image_url: form.imageUrl || null,
       health_score: form.status === 'operational' ? 90 : form.status === 'warning' ? 55 : form.status === 'critical' ? 25 : 45,
-      created_by: userData?.user?.id || null,
-    });
+    };
+    const { error } = editingEq
+      ? await supabase.from('equipment').update(payload).eq('id', editingEq.dbId)
+      : await supabase.from('equipment').insert({ ...payload, created_by: userData?.user?.id || null });
 
     setSubmitting(false);
     if (error) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+      toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
       return;
     }
-
-    setShowAddModal(false);
-    setForm({ name: '', category: categories[0], location: locations[0], status: 'operational', manufacturer: '', serialNumber: '', imageUrl: '' });
-    toast({ title: 'Équipement ajouté', description: `${form.name} a été ajouté avec succès.` });
+    toast({
+      title: editingEq ? t('equipment.toast.updated') : t('equipment.toast.added'),
+      description: form.name,
+    });
+    closeFormModal();
     fetchEquipments();
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDelete = async () => {
+    if (!deletingEq) return;
+    setSubmitting(true);
+    const { error } = await supabase.from('equipment').delete().eq('id', deletingEq.dbId);
+    setSubmitting(false);
+    if (error) {
+      toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: t('equipment.toast.deleted'), description: deletingEq.name });
+    setDeletingEq(null);
+    fetchEquipments();
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setForm(p => ({ ...p, imageUrl: url }));
+    setUploadingImg(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id || 'anon';
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${uid}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('equipment-images').upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) {
+        toast({ title: t('common.error'), description: upErr.message, variant: 'destructive' });
+        return;
+      }
+      const { data: signed } = await supabase.storage.from('equipment-images').createSignedUrl(path, 3600);
+      // Store the path in DB but use signed URL for preview
+      setForm(p => ({ ...p, imageUrl: signed?.signedUrl || path }));
+      toast({ title: t('equipment.toast.image_uploaded') });
+    } finally {
+      setUploadingImg(false);
+    }
   };
 
   const downloadQR = (eq: Equipment) => {
@@ -180,7 +251,7 @@ const Equipements = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-3 text-muted-foreground">Chargement des équipements...</span>
+        <span className="ml-3 text-muted-foreground">{t('equipment.loading')}</span>
       </div>
     );
   }
@@ -189,26 +260,28 @@ const Equipements = () => {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Équipements</h1>
-          <p className="text-sm text-muted-foreground">{equipments.length} équipements enregistrés</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">{t('equipment.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('equipment.count', { count: equipments.length })}</p>
         </div>
         <div className="flex items-center gap-2">
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={startScanner} className="px-3 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors">
-            <Camera className="h-4 w-4" /> Scanner QR
+            <Camera className="h-4 w-4" /> {t('equipment.scan_qr')}
           </motion.button>
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowAddModal(true)} className="px-4 py-2.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Ajouter
-          </motion.button>
+          {canManage && (
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setEditingEq(null); resetForm(); setShowAddModal(true); }} className="px-4 py-2.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 flex items-center gap-2">
+              <Plus className="h-4 w-4" /> {t('equipment.add')}
+            </motion.button>
+          )}
         </div>
       </motion.div>
 
       {/* Status Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'En service', value: statusStats.operational, color: 'text-success', bg: 'bg-success/10', icon: CheckCircle2, key: 'operational' },
-          { label: 'Maintenance', value: statusStats.maintenance, color: 'text-info', bg: 'bg-info/10', icon: Wrench, key: 'maintenance' },
-          { label: 'Attention', value: statusStats.warning, color: 'text-warning', bg: 'bg-warning/10', icon: AlertTriangle, key: 'warning' },
-          { label: 'En panne', value: statusStats.critical, color: 'text-destructive', bg: 'bg-destructive/10', icon: Activity, key: 'critical' },
+          { label: t('equipment.status.operational'), value: statusStats.operational, color: 'text-success', bg: 'bg-success/10', icon: CheckCircle2, key: 'operational' },
+          { label: t('equipment.status.maintenance'), value: statusStats.maintenance, color: 'text-info', bg: 'bg-info/10', icon: Wrench, key: 'maintenance' },
+          { label: t('equipment.status.warning'), value: statusStats.warning, color: 'text-warning', bg: 'bg-warning/10', icon: AlertTriangle, key: 'warning' },
+          { label: t('equipment.status.critical'), value: statusStats.critical, color: 'text-destructive', bg: 'bg-destructive/10', icon: Activity, key: 'critical' },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className={cn("rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:ring-1 transition-all", s.bg, filterStatus === s.key ? 'ring-2 ring-primary' : 'ring-transparent')}
@@ -227,10 +300,10 @@ const Equipements = () => {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher un équipement..." className="w-full h-10 pl-10 pr-4 rounded-lg bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('equipment.search_placeholder')} className="w-full h-10 pl-10 pr-4 rounded-lg bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
         </div>
         <button onClick={() => setFilterStatus('all')} className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-colors", filterStatus === 'all' ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80")}>
-          Tous ({equipments.length})
+          {t('equipment.all')} ({equipments.length})
         </button>
       </div>
 
@@ -238,8 +311,8 @@ const Equipements = () => {
       {filtered.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-12 text-center">
           <Settings2 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">Aucun équipement trouvé</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Modifiez vos filtres ou ajoutez un nouvel équipement</p>
+          <p className="text-sm text-muted-foreground">{t('equipment.empty.title')}</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">{t('equipment.empty.subtitle')}</p>
         </motion.div>
       )}
 
@@ -250,7 +323,7 @@ const Equipements = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  {['Équipement', 'Catégorie', 'Localisation', 'Santé', 'Statut', 'MTBF', 'Prochaine maint.', ''].map(h => (
+                  {[t('equipment.col.equipment'), t('equipment.col.category'), t('equipment.col.location'), t('equipment.col.health'), t('equipment.col.status'), t('equipment.col.mtbf'), t('equipment.col.next_maint'), ''].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-muted-foreground px-5 py-3">{h}</th>
                   ))}
                 </tr>
@@ -298,8 +371,13 @@ const Equipements = () => {
                     <td className="px-5 py-4 text-sm text-muted-foreground">{eq.nextMaintenance}</td>
                     <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
-                        <button onClick={(e) => { e.stopPropagation(); setQrEquipment(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors" title="QR Code"><QrCode className="h-4 w-4" /></button>
-                        <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setQrEquipment(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors" title={t('equipment.actions.qr')}><QrCode className="h-4 w-4" /></button>
+                        {canManage && (
+                          <button onClick={(e) => { e.stopPropagation(); openEdit(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-primary transition-colors" title={t('equipment.actions.edit')}><Pencil className="h-4 w-4" /></button>
+                        )}
+                        {isAdmin && (
+                          <button onClick={(e) => { e.stopPropagation(); setDeletingEq(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" title={t('equipment.actions.delete')}><Trash2 className="h-4 w-4" /></button>
+                        )}
                       </div>
                     </td>
                   </motion.tr>
@@ -313,23 +391,25 @@ const Equipements = () => {
       {/* Add Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="glass-card-strong w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeFormModal}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="glass-card-strong w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-foreground">Ajouter un équipement</h2>
-                <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+                <h2 className="text-base font-semibold text-foreground">{editingEq ? t('equipment.modal.edit_title') : t('equipment.modal.add_title')}</h2>
+                <button onClick={closeFormModal} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Photo de l'équipement</label>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.photo')}</label>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                  <div onClick={() => fileInputRef.current?.click()} className="w-full h-28 rounded-lg border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors overflow-hidden">
-                    {form.imageUrl ? (
+                  <div onClick={() => !uploadingImg && fileInputRef.current?.click()} className="w-full h-28 rounded-lg border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors overflow-hidden">
+                    {uploadingImg ? (
+                      <><Loader2 className="h-5 w-5 animate-spin text-primary mb-1" /><p className="text-xs text-muted-foreground">{t('equipment.form.uploading')}</p></>
+                    ) : form.imageUrl ? (
                       <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <>
                         <ImageIcon className="h-6 w-6 text-muted-foreground/50 mb-1" />
-                        <p className="text-xs text-muted-foreground">Cliquez pour uploader une image</p>
+                        <p className="text-xs text-muted-foreground">{t('equipment.form.upload_hint')}</p>
                       </>
                     )}
                   </div>
@@ -337,39 +417,39 @@ const Equipements = () => {
                     type="button"
                     disabled={aiImgLoading || !form.name}
                     onClick={async () => {
-                      if (!form.name) { toast({ title: 'Nom requis', description: "Saisissez d'abord le nom de l'équipement.", variant: 'destructive' }); return; }
+                      if (!form.name) { toast({ title: t('equipment.errors.name_required'), variant: 'destructive' }); return; }
                       setAiImgLoading(true);
                       try {
                         const { data, error } = await supabase.functions.invoke('generate-equipment-image', {
                           body: { name: form.name, category: form.category, manufacturer: form.manufacturer },
                         });
                         if (error || !data?.imageUrl) {
-                          toast({ title: 'Échec génération IA', description: data?.error || error?.message || 'Erreur', variant: 'destructive' });
+                          toast({ title: t('equipment.errors.ai_failed'), description: data?.error || error?.message || 'Error', variant: 'destructive' });
                           return;
                         }
                         setForm(p => ({ ...p, imageUrl: data.imageUrl }));
-                        toast({ title: '✓ Image générée', description: 'Image IA ajoutée à l\'équipement.' });
+                        toast({ title: t('equipment.toast.ai_generated') });
                       } finally { setAiImgLoading(false); }
                     }}
                     className="mt-2 w-full h-9 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 hover:from-primary/30 hover:to-accent/30 transition-all disabled:opacity-50"
                   >
                     {aiImgLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span>✨</span>}
-                    {aiImgLoading ? 'Génération IA...' : "Générer l'image avec l'IA"}
+                    {aiImgLoading ? t('equipment.form.ai_generating') : t('equipment.form.ai_generate')}
                   </button>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Nom de l'équipement *</label>
-                  <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Ex: Compresseur XL-500" />
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.name')} *</label>
+                  <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder={t('equipment.form.name_placeholder')} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Catégorie</label>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.category')}</label>
                     <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                       {categories.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Localisation</label>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.location')}</label>
                     <select value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                       {locations.map(l => <option key={l}>{l}</option>)}
                     </select>
@@ -377,28 +457,28 @@ const Equipements = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Fabricant</label>
-                    <input value={form.manufacturer} onChange={e => setForm(p => ({ ...p, manufacturer: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Marque..." />
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.manufacturer')}</label>
+                    <input value={form.manufacturer} onChange={e => setForm(p => ({ ...p, manufacturer: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder={t('equipment.form.manufacturer_placeholder')} />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">N° de série</label>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.serial')}</label>
                     <input value={form.serialNumber} onChange={e => setForm(p => ({ ...p, serialNumber: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="SN-..." />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Statut initial</label>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">{t('equipment.form.status')}</label>
                   <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as EquipmentStatus }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <option value="operational">En service</option>
-                    <option value="maintenance">En maintenance</option>
-                    <option value="warning">Attention requise</option>
-                    <option value="critical">En panne</option>
+                    <option value="operational">{t('equipment.status.operational')}</option>
+                    <option value="maintenance">{t('equipment.status.maintenance')}</option>
+                    <option value="warning">{t('equipment.status.warning')}</option>
+                    <option value="critical">{t('equipment.status.critical')}</option>
                   </select>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button onClick={() => setShowAddModal(false)} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">Annuler</button>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleAdd} disabled={submitting}
+                  <button onClick={closeFormModal} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">{t('common.cancel')}</button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSave} disabled={submitting}
                     className="flex-1 h-10 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 disabled:opacity-50">
-                    {submitting ? 'Ajout...' : 'Ajouter'}
+                    {submitting ? t('common.saving') : (editingEq ? t('common.save') : t('equipment.add'))}
                   </motion.button>
                 </div>
               </div>
@@ -522,6 +602,25 @@ const Equipements = () => {
                 <p className="text-xs text-muted-foreground text-center">Pointez la caméra vers un QR code d'équipement</p>
               )}
               <p className="text-[10px] text-muted-foreground text-center mt-3">💡 Scannez le QR code imprimé sur la plaque de l'équipement pour accéder à sa fiche technique.</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation */}
+      <AnimatePresence>
+        {deletingEq && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setDeletingEq(null)}>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="glass-card-strong w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center"><Trash2 className="h-5 w-5 text-destructive" /></div>
+                <h2 className="text-base font-semibold text-foreground">{t('equipment.delete.title')}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">{t('equipment.delete.confirm', { name: deletingEq.name })}</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeletingEq(null)} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80">{t('common.cancel')}</button>
+                <button onClick={handleDelete} disabled={submitting} className="flex-1 h-10 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium disabled:opacity-50">{submitting ? '...' : t('common.delete')}</button>
+              </div>
             </motion.div>
           </motion.div>
         )}

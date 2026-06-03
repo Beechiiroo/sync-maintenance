@@ -79,7 +79,30 @@
     "admin": "مدير",
     "maintenanceManager": "مسؤول الصيانة",
     "notifications": "الإشعارات",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "saving": "جاري الحفظ...",
+    "delete": "حذف",
+    "error": "خطأ"
+  },
+  "equipment": {
+    "title": "المعدات",
+    "count": "{{count}} معدات مسجلة",
+    "add": "إضافة",
+    "scan_qr": "مسح QR",
+    "all": "الكل",
+    "loading": "جاري تحميل المعدات...",
+    "search_placeholder": "البحث عن معدة...",
+    "status": { "operational": "قيد التشغيل", "maintenance": "صيانة", "warning": "تحذير", "critical": "حرج" },
+    "col": { "equipment": "المعدة", "category": "الفئة", "location": "الموقع", "health": "الصحة", "status": "الحالة", "mtbf": "MTBF", "next_maint": "الصيانة التالية" },
+    "actions": { "qr": "رمز QR", "edit": "تعديل", "delete": "حذف" },
+    "empty": { "title": "لا توجد معدات", "subtitle": "عدّل التصفية أو أضف معدة جديدة" },
+    "modal": { "add_title": "إضافة معدة", "edit_title": "تعديل المعدة" },
+    "form": { "photo": "صورة المعدة", "upload_hint": "اضغط لرفع صورة", "uploading": "جاري الرفع...", "name": "اسم المعدة", "name_placeholder": "مثال: ضاغط XL-500", "category": "الفئة", "location": "الموقع", "manufacturer": "الشركة المصنّعة", "manufacturer_placeholder": "العلامة...", "serial": "الرقم التسلسلي", "status": "الحالة الأولية", "ai_generate": "توليد صورة بالذكاء الاصطناعي", "ai_generating": "جاري التوليد..." },
+    "errors": { "name_required": "اسم المعدة مطلوب.", "ai_failed": "فشل توليد الذكاء الاصطناعي" },
+    "toast": { "added": "تمت إضافة المعدة", "updated": "تم تحديث المعدة", "deleted": "تم حذف المعدة", "image_uploaded": "تم رفع الصورة", "ai_generated": "✓ تم توليد الصورة" },
+    "delete": { "title": "حذف المعدة؟", "confirm": "سيتم حذف «{{name}}» نهائيًا. هل تريد المتابعة؟" }
   },
   "chatbot": {
     "title": "مساعد GMAO",
