@@ -82,21 +82,28 @@ const Equipements = () => {
       return;
     }
 
-    const mapped: Equipment[] = (data || []).map(eq => ({
-      id: eq.id.substring(0, 8).toUpperCase(),
-      dbId: eq.id,
-      name: eq.name,
-      category: eq.category,
-      location: eq.location,
-      status: eq.status as EquipmentStatus,
-      lastMaintenance: formatDate(eq.last_maintenance),
-      nextMaintenance: formatDate(eq.next_maintenance),
-      mtbf: eq.mtbf_hours ? `${eq.mtbf_hours}h` : '-',
-      healthScore: eq.health_score ?? 100,
-      serialNumber: eq.serial_number ?? undefined,
-      manufacturer: eq.manufacturer ?? undefined,
-      imageUrl: eq.image_url ?? undefined,
-      _dbId: eq.id,
+    const mapped: Equipment[] = await Promise.all((data || []).map(async eq => {
+      let imageUrl: string | undefined = eq.image_url ?? undefined;
+      // If stored as storage path (no http), resolve signed URL
+      if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('blob:') && !imageUrl.startsWith('data:')) {
+        const { data: signed } = await supabase.storage.from('equipment-images').createSignedUrl(imageUrl, 3600);
+        imageUrl = signed?.signedUrl ?? undefined;
+      }
+      return {
+        id: eq.id.substring(0, 8).toUpperCase(),
+        dbId: eq.id,
+        name: eq.name,
+        category: eq.category,
+        location: eq.location,
+        status: eq.status as EquipmentStatus,
+        lastMaintenance: formatDate(eq.last_maintenance),
+        nextMaintenance: formatDate(eq.next_maintenance),
+        mtbf: eq.mtbf_hours ? `${eq.mtbf_hours}h` : '-',
+        healthScore: eq.health_score ?? 100,
+        serialNumber: eq.serial_number ?? undefined,
+        manufacturer: eq.manufacturer ?? undefined,
+        imageUrl,
+      };
     }));
     setEquipments(mapped);
     setLoading(false);
