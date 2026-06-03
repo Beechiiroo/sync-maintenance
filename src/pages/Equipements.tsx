@@ -607,6 +607,25 @@ const Equipements = () => {
         )}
       </AnimatePresence>
 
+      {/* Delete Confirmation */}
+      <AnimatePresence>
+        {deletingEq && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setDeletingEq(null)}>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="glass-card-strong w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center"><Trash2 className="h-5 w-5 text-destructive" /></div>
+                <h2 className="text-base font-semibold text-foreground">{t('equipment.delete.title')}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">{t('equipment.delete.confirm', { name: deletingEq.name })}</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeletingEq(null)} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80">{t('common.cancel')}</button>
+                <button onClick={handleDelete} disabled={submitting} className="flex-1 h-10 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium disabled:opacity-50">{submitting ? '...' : t('common.delete')}</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Image Preview Modal */}
       {previewImage && (
         <ImagePreviewModal src={previewImage.src} alt={previewImage.alt} open={!!previewImage} onClose={() => setPreviewImage(null)} />
