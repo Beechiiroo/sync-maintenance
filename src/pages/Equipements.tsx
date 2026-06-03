@@ -371,8 +371,13 @@ const Equipements = () => {
                     <td className="px-5 py-4 text-sm text-muted-foreground">{eq.nextMaintenance}</td>
                     <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
-                        <button onClick={(e) => { e.stopPropagation(); setQrEquipment(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors" title="QR Code"><QrCode className="h-4 w-4" /></button>
-                        <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setQrEquipment(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors" title={t('equipment.actions.qr')}><QrCode className="h-4 w-4" /></button>
+                        {canManage && (
+                          <button onClick={(e) => { e.stopPropagation(); openEdit(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-primary transition-colors" title={t('equipment.actions.edit')}><Pencil className="h-4 w-4" /></button>
+                        )}
+                        {isAdmin && (
+                          <button onClick={(e) => { e.stopPropagation(); setDeletingEq(eq); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" title={t('equipment.actions.delete')}><Trash2 className="h-4 w-4" /></button>
+                        )}
                       </div>
                     </td>
                   </motion.tr>
