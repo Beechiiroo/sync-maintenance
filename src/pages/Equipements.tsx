@@ -260,16 +260,18 @@ const Equipements = () => {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Équipements</h1>
-          <p className="text-sm text-muted-foreground">{equipments.length} équipements enregistrés</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">{t('equipment.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('equipment.count', { count: equipments.length })}</p>
         </div>
         <div className="flex items-center gap-2">
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={startScanner} className="px-3 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors">
-            <Camera className="h-4 w-4" /> Scanner QR
+            <Camera className="h-4 w-4" /> {t('equipment.scan_qr')}
           </motion.button>
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowAddModal(true)} className="px-4 py-2.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Ajouter
-          </motion.button>
+          {canManage && (
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setEditingEq(null); resetForm(); setShowAddModal(true); }} className="px-4 py-2.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 flex items-center gap-2">
+              <Plus className="h-4 w-4" /> {t('equipment.add')}
+            </motion.button>
+          )}
         </div>
       </motion.div>
 
