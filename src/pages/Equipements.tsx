@@ -323,7 +323,7 @@ const Equipements = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  {['Équipement', 'Catégorie', 'Localisation', 'Santé', 'Statut', 'MTBF', 'Prochaine maint.', ''].map(h => (
+                  {[t('equipment.col.equipment'), t('equipment.col.category'), t('equipment.col.location'), t('equipment.col.health'), t('equipment.col.status'), t('equipment.col.mtbf'), t('equipment.col.next_maint'), ''].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-muted-foreground px-5 py-3">{h}</th>
                   ))}
                 </tr>
