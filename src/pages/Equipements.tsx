@@ -311,8 +311,8 @@ const Equipements = () => {
       {filtered.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-12 text-center">
           <Settings2 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">Aucun équipement trouvé</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Modifiez vos filtres ou ajoutez un nouvel équipement</p>
+          <p className="text-sm text-muted-foreground">{t('equipment.empty.title')}</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">{t('equipment.empty.subtitle')}</p>
         </motion.div>
       )}
 
