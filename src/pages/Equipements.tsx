@@ -278,10 +278,10 @@ const Equipements = () => {
       {/* Status Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'En service', value: statusStats.operational, color: 'text-success', bg: 'bg-success/10', icon: CheckCircle2, key: 'operational' },
-          { label: 'Maintenance', value: statusStats.maintenance, color: 'text-info', bg: 'bg-info/10', icon: Wrench, key: 'maintenance' },
-          { label: 'Attention', value: statusStats.warning, color: 'text-warning', bg: 'bg-warning/10', icon: AlertTriangle, key: 'warning' },
-          { label: 'En panne', value: statusStats.critical, color: 'text-destructive', bg: 'bg-destructive/10', icon: Activity, key: 'critical' },
+          { label: t('equipment.status.operational'), value: statusStats.operational, color: 'text-success', bg: 'bg-success/10', icon: CheckCircle2, key: 'operational' },
+          { label: t('equipment.status.maintenance'), value: statusStats.maintenance, color: 'text-info', bg: 'bg-info/10', icon: Wrench, key: 'maintenance' },
+          { label: t('equipment.status.warning'), value: statusStats.warning, color: 'text-warning', bg: 'bg-warning/10', icon: AlertTriangle, key: 'warning' },
+          { label: t('equipment.status.critical'), value: statusStats.critical, color: 'text-destructive', bg: 'bg-destructive/10', icon: Activity, key: 'critical' },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className={cn("rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:ring-1 transition-all", s.bg, filterStatus === s.key ? 'ring-2 ring-primary' : 'ring-transparent')}
