@@ -256,11 +256,21 @@ const Stock = () => {
                       <td className="px-5 py-4 text-sm font-mono text-foreground">{item.price}€</td>
                       <td className="px-5 py-4 text-sm text-muted-foreground">{item.supplier}</td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", sc.bg, sc.color)}>{sc.label}</span>
-                          {item.status !== 'ok' && (
-                            <motion.button whileHover={{ scale: 1.1 }} className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center" title="Commander">
-                              <ShoppingCart className="h-3.5 w-3.5" />
+                          {canManage && (
+                            <>
+                              <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleMovement(item, 'in')} className="w-7 h-7 rounded-lg bg-success/10 text-success flex items-center justify-center" title="Entrée stock">
+                                <Plus className="h-3.5 w-3.5" />
+                              </motion.button>
+                              <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleMovement(item, 'out')} disabled={item.quantity === 0} className="w-7 h-7 rounded-lg bg-warning/10 text-warning flex items-center justify-center disabled:opacity-30" title="Sortie stock">
+                                <Minus className="h-3.5 w-3.5" />
+                              </motion.button>
+                            </>
+                          )}
+                          {isAdmin && (
+                            <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleDelete(item)} className="w-7 h-7 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center" title="Supprimer">
+                              <Trash2 className="h-3.5 w-3.5" />
                             </motion.button>
                           )}
                         </div>
