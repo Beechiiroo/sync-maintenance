@@ -239,13 +239,17 @@ const Maintenance = () => {
                       <p className="text-sm font-medium text-foreground">{s.equipment_name}</p>
                       <p className="text-xs text-muted-foreground">{s.task} · {s.frequency}</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      {(s.status === 'urgent' || s.status === 'overdue') && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20"
-                        >
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {canManage && (s.status === 'urgent' || s.status === 'overdue') && (
+                        <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleGenerateOT(s)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20 hover:bg-destructive/20 transition-colors">
                           <Zap className="h-3 w-3" /> Générer OT
+                        </motion.button>
+                      )}
+                      {canManage && (
+                        <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleMarkDone(s)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success/10 text-success text-xs font-semibold border border-success/20 hover:bg-success/20 transition-colors">
+                          <CheckCircle2 className="h-3 w-3" /> Marquer fait
                         </motion.button>
                       )}
                       <div className="text-right">
