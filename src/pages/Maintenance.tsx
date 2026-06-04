@@ -4,6 +4,8 @@ import { CalendarClock, CheckCircle2, Clock, AlertCircle, Plus, X, Zap, ChevronL
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
+import { logAudit } from '@/lib/audit';
 
 interface Schedule {
   id: string;
@@ -35,6 +37,8 @@ function computeStatus(daysLeft: number): Schedule['status'] {
 
 const Maintenance = () => {
   const { toast } = useToast();
+  const { isAdmin, isTechnician, userId } = useUserRole();
+  const canManage = isAdmin || isTechnician;
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [equipmentList, setEquipmentList] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,9 +96,41 @@ const Maintenance = () => {
       return;
     }
     toast({ title: '✅ Planifié', description: 'Maintenance ajoutée avec succès' });
+    logAudit('Maintenance', 'create', `Planification "${form.task}" créée`);
     setShowModal(false);
     setForm({ equipment_id: '', task: '', frequency: 'Mensuel', nextDate: '' });
     fetchData();
+  };
+
+  const handleMarkDone = async (s: Schedule) => {
+    const now = new Date().toISOString();
+    // Compute next due based on frequency
+    const next = new Date();
+    const incDays: Record<string, number> = { Quotidien: 1, Hebdomadaire: 7, 'Bi-mensuel': 14, Mensuel: 30, Trimestriel: 90, Semestriel: 180, Annuel: 365 };
+    next.setDate(next.getDate() + (incDays[s.frequency] || 30));
+    const { error } = await supabase.from('maintenance_schedules')
+      .update({ last_performed: now, next_due: next.toISOString(), status: 'upcoming' })
+      .eq('id', s.id);
+    if (error) { toast({ title: 'Erreur', description: error.message, variant: 'destructive' }); return; }
+    logAudit('Maintenance', 'update', `Tâche "${s.task}" sur ${s.equipment_name} marquée comme effectuée`);
+    toast({ title: '✅ Effectuée', description: `Prochaine échéance: ${next.toLocaleDateString('fr-FR')}` });
+    fetchData();
+  };
+
+  const handleGenerateOT = async (s: Schedule) => {
+    const { error } = await supabase.from('interventions').insert({
+      title: `[Préventif] ${s.task}`,
+      description: `Généré depuis le planning préventif (${s.frequency})`,
+      type: 'preventive',
+      priority: s.status === 'overdue' ? 'high' : 'medium',
+      status: 'planned',
+      equipment_id: s.equipment_id,
+      scheduled_date: s.next_due,
+      created_by: userId,
+    });
+    if (error) { toast({ title: 'Erreur', description: error.message, variant: 'destructive' }); return; }
+    logAudit('Maintenance', 'create', `OT généré depuis planning "${s.task}"`);
+    toast({ title: '⚡ OT créé', description: `Intervention planifiée pour ${s.equipment_name}` });
   };
 
   const formatDate = (iso: string) => {
@@ -203,13 +239,17 @@ const Maintenance = () => {
                       <p className="text-sm font-medium text-foreground">{s.equipment_name}</p>
                       <p className="text-xs text-muted-foreground">{s.task} · {s.frequency}</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      {(s.status === 'urgent' || s.status === 'overdue') && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20"
-                        >
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {canManage && (s.status === 'urgent' || s.status === 'overdue') && (
+                        <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleGenerateOT(s)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold border border-destructive/20 hover:bg-destructive/20 transition-colors">
                           <Zap className="h-3 w-3" /> Générer OT
+                        </motion.button>
+                      )}
+                      {canManage && (
+                        <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleMarkDone(s)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success/10 text-success text-xs font-semibold border border-success/20 hover:bg-success/20 transition-colors">
+                          <CheckCircle2 className="h-3 w-3" /> Marquer fait
                         </motion.button>
                       )}
                       <div className="text-right">

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, AlertTriangle, Plus, Search, TrendingDown, X, ShoppingCart, Loader2 } from 'lucide-react';
+import { Package, AlertTriangle, Plus, Search, TrendingDown, X, ShoppingCart, Loader2, Trash2, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
+import { logAudit } from '@/lib/audit';
 
 type StockStatus = 'ok' | 'low' | 'critical' | 'out_of_stock';
 
@@ -30,6 +32,8 @@ const statusConfig: Record<StockStatus, { label: string; color: string; bg: stri
 
 const Stock = () => {
   const { toast } = useToast();
+  const { isAdmin, isTechnician, userId } = useUserRole();
+  const canManage = isAdmin || isTechnician;
   const [stock, setStock] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -106,6 +110,31 @@ const Stock = () => {
     setShowModal(false);
     setForm({ name: '', reference: '', category: '', quantity: '', min: '', price: '', supplier: '', location: '' });
     toast({ title: 'Pièce ajoutée', description: `${form.name} a été ajoutée au stock.` });
+    logAudit('Stock', 'create', `Pièce "${form.name}" (${form.reference}) ajoutée`);
+    fetchStock();
+  };
+
+  const handleDelete = async (item: StockItem) => {
+    if (!confirm(`Supprimer la pièce "${item.name}" ?`)) return;
+    const { error } = await supabase.from('spare_parts').delete().eq('id', item.dbId);
+    if (error) { toast({ title: 'Erreur', description: error.message, variant: 'destructive' }); return; }
+    logAudit('Stock', 'delete', `Pièce "${item.name}" (${item.reference}) supprimée`);
+    toast({ title: '🗑️ Supprimée', description: item.name });
+    fetchStock();
+  };
+
+  const handleMovement = async (item: StockItem, type: 'in' | 'out') => {
+    const qtyStr = prompt(`Quantité à ${type === 'in' ? 'entrer' : 'sortir'} pour "${item.name}" :`, '1');
+    if (!qtyStr) return;
+    const qty = parseInt(qtyStr);
+    if (isNaN(qty) || qty <= 0) { toast({ title: 'Erreur', description: 'Quantité invalide', variant: 'destructive' }); return; }
+    const newQty = type === 'in' ? item.quantity + qty : Math.max(0, item.quantity - qty);
+    const newStatus: StockStatus = newQty === 0 ? 'out_of_stock' : newQty < item.min ? (newQty <= item.min / 2 ? 'critical' : 'low') : 'ok';
+    const { error: e1 } = await supabase.from('spare_parts').update({ quantity: newQty, status: newStatus }).eq('id', item.dbId);
+    if (e1) { toast({ title: 'Erreur', description: e1.message, variant: 'destructive' }); return; }
+    await supabase.from('stock_movements').insert({ spare_part_id: item.dbId, type, quantity: qty, performed_by: userId });
+    logAudit('Stock', 'update', `${type === 'in' ? 'Entrée' : 'Sortie'} ${qty}x "${item.name}" (stock: ${newQty})`);
+    toast({ title: type === 'in' ? '📥 Entrée' : '📤 Sortie', description: `${item.name}: ${item.quantity} → ${newQty}` });
     fetchStock();
   };
 
@@ -227,11 +256,21 @@ const Stock = () => {
                       <td className="px-5 py-4 text-sm font-mono text-foreground">{item.price}€</td>
                       <td className="px-5 py-4 text-sm text-muted-foreground">{item.supplier}</td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", sc.bg, sc.color)}>{sc.label}</span>
-                          {item.status !== 'ok' && (
-                            <motion.button whileHover={{ scale: 1.1 }} className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center" title="Commander">
-                              <ShoppingCart className="h-3.5 w-3.5" />
+                          {canManage && (
+                            <>
+                              <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleMovement(item, 'in')} className="w-7 h-7 rounded-lg bg-success/10 text-success flex items-center justify-center" title="Entrée stock">
+                                <Plus className="h-3.5 w-3.5" />
+                              </motion.button>
+                              <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleMovement(item, 'out')} disabled={item.quantity === 0} className="w-7 h-7 rounded-lg bg-warning/10 text-warning flex items-center justify-center disabled:opacity-30" title="Sortie stock">
+                                <Minus className="h-3.5 w-3.5" />
+                              </motion.button>
+                            </>
+                          )}
+                          {isAdmin && (
+                            <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleDelete(item)} className="w-7 h-7 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center" title="Supprimer">
+                              <Trash2 className="h-3.5 w-3.5" />
                             </motion.button>
                           )}
                         </div>

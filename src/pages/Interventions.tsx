@@ -5,6 +5,9 @@ import StatusBadge from '@/components/common/StatusBadge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
+import { logAudit } from '@/lib/audit';
+import { Play, CheckCheck, Trash2 } from 'lucide-react';
 
 type Priority = 'low' | 'medium' | 'high' | 'critical';
 type InterventionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
@@ -54,6 +57,8 @@ const statusLabels: Record<InterventionStatus, string> = {
 
 const Interventions = () => {
   const { toast } = useToast();
+  const { isAdmin, isTechnician } = useUserRole();
+  const canManage = isAdmin || isTechnician;
   const [interventions, setInterventions] = useState<Intervention[]>([]);
   const [equipmentList, setEquipmentList] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,6 +135,28 @@ const Interventions = () => {
     setShowModal(false);
     setForm({ title: '', equipmentId: '', priority: 'medium', date: '', description: '' });
     toast({ title: 'Intervention créée', description: `${form.title} a été planifiée.` });
+    fetchData();
+  };
+
+  const handleStatusChange = async (item: Intervention, status: InterventionStatus) => {
+    const patch: Record<string, unknown> = { status };
+    if (status === 'in_progress') patch.started_at = new Date().toISOString();
+    if (status === 'completed') patch.completed_at = new Date().toISOString();
+    const { error } = await supabase.from('interventions').update(patch).eq('id', item._dbId);
+    if (error) { toast({ title: 'Erreur', description: error.message, variant: 'destructive' }); return; }
+    logAudit('Interventions', 'update', `OT "${item.title}" → ${statusLabels[status]}`);
+    toast({ title: '✅ Statut mis à jour', description: statusLabels[status] });
+    setSelectedIntervention(null);
+    fetchData();
+  };
+
+  const handleDelete = async (item: Intervention) => {
+    if (!confirm(`Supprimer l'intervention "${item.title}" ?`)) return;
+    const { error } = await supabase.from('interventions').delete().eq('id', item._dbId);
+    if (error) { toast({ title: 'Erreur', description: error.message, variant: 'destructive' }); return; }
+    logAudit('Interventions', 'delete', `OT "${item.title}" supprimé`);
+    toast({ title: '🗑️ Supprimée', description: item.title });
+    setSelectedIntervention(null);
     fetchData();
   };
 
@@ -361,7 +388,26 @@ const Interventions = () => {
                   </div>
                 )}
               </div>
-              <button onClick={() => setSelectedIntervention(null)} className="w-full mt-5 h-10 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">Fermer</button>
+              {canManage && (
+                <div className="flex flex-wrap gap-2 mt-5">
+                  {selectedIntervention.status === 'planned' && (
+                    <button onClick={() => handleStatusChange(selectedIntervention, 'in_progress')} className="flex-1 h-10 rounded-xl bg-warning/10 text-warning text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-warning/20 transition-colors border border-warning/20">
+                      <Play className="h-3.5 w-3.5" /> Démarrer
+                    </button>
+                  )}
+                  {selectedIntervention.status === 'in_progress' && (
+                    <button onClick={() => handleStatusChange(selectedIntervention, 'completed')} className="flex-1 h-10 rounded-xl bg-success/10 text-success text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-success/20 transition-colors border border-success/20">
+                      <CheckCheck className="h-3.5 w-3.5" /> Terminer
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button onClick={() => handleDelete(selectedIntervention)} className="h-10 px-4 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-destructive/20 transition-colors border border-destructive/20">
+                      <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                    </button>
+                  )}
+                </div>
+              )}
+              <button onClick={() => setSelectedIntervention(null)} className="w-full mt-3 h-10 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:bg-muted/80 transition-colors">Fermer</button>
             </motion.div>
           </motion.div>
         )}
