@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QrCode, Package, Search, AlertTriangle, ArrowRightLeft, Plus, X, History } from 'lucide-react';
+import { QrCode, Package, Search, AlertTriangle, ArrowRightLeft, Plus, X, History, Camera } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { QRCodeSVG } from 'qrcode.react';
+import QrScannerModal from '@/components/common/QrScannerModal';
 
 interface SparePart {
   id: string;
@@ -37,7 +38,20 @@ const QRInventory = () => {
   const [search, setSearch] = useState('');
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
   const [showQR, setShowQR] = useState<string | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
   const { toast } = useToast();
+
+  const handleScan = (decoded: string) => {
+    setScanOpen(false);
+    const cleaned = decoded.replace(/^SYNC-MAINT:/i, '').split(':').pop() || decoded;
+    const match = parts.find(p => p.id === cleaned || p.ref === cleaned || decoded.includes(p.id) || decoded.includes(p.ref));
+    if (match) {
+      setSelectedPart(match);
+      toast({ title: '✓ Pièce trouvée', description: match.name });
+    } else {
+      toast({ title: 'Aucune correspondance', description: decoded, variant: 'destructive' });
+    }
+  };
 
   const filtered = parts.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.ref.toLowerCase().includes(search.toLowerCase()));
   const lowStockCount = parts.filter(p => p.stock < p.minStock).length;
@@ -55,11 +69,12 @@ const QRInventory = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Système QR Pièces Détachées</h1>
           <p className="text-sm text-muted-foreground">Gestion de stock par code QR avec traçabilité</p>
         </div>
+        <Button onClick={() => setScanOpen(true)} className="gap-2"><Camera className="h-4 w-4" /> Scanner une pièce</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
