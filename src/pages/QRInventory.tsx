@@ -174,6 +174,8 @@ const QRInventory = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <QrScannerModal open={scanOpen} onClose={() => setScanOpen(false)} onScan={handleScan} title="Scanner une pièce détachée" />
     </div>
   );
 };
