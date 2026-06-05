@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import AppSidebar from '@/components/navigation/AppSidebar';
 import TopBar from '@/components/navigation/TopBar';
 import MobileNav from '@/components/navigation/MobileNav';
+import OfflineIndicator from '@/components/common/OfflineIndicator';
 import { useAppSelector } from '@/store';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -11,6 +12,7 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <OfflineIndicator />
       <div className="hidden md:block">
         <AppSidebar />
       </div>

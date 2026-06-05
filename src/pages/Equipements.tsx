@@ -5,6 +5,7 @@ import { Search, Plus, Settings2, QrCode, MoreHorizontal, X, Upload, History, Al
 import { QRCodeSVG } from 'qrcode.react';
 import StatusBadge from '@/components/common/StatusBadge';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal';
+import QrScannerModal from '@/components/common/QrScannerModal';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -229,23 +230,32 @@ const Equipements = () => {
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
-  const startScanner = useCallback(async () => {
-    setShowScanner(true);
+  const startScanner = useCallback(() => {
     setScanResult(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); }
-    } catch { setScanResult('Caméra non disponible'); }
+    setShowScanner(true);
   }, []);
 
   const stopScanner = useCallback(() => {
-    if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
-      videoRef.current.srcObject = null;
-    }
-    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
     setShowScanner(false);
   }, []);
+
+  const handleQrDecoded = useCallback((decoded: string) => {
+    setScanResult(decoded);
+    // QR formats supportés : "SYNC-MAINT:EQ:<dbId>" ou directement le dbId/short id ou un nom
+    const cleaned = decoded.replace(/^SYNC-MAINT:[A-Z]+:?/i, '').trim();
+    const match = equipments.find(eq =>
+      eq.dbId === cleaned ||
+      eq.id === cleaned.substring(0, 8).toUpperCase() ||
+      eq.name.toLowerCase() === cleaned.toLowerCase()
+    );
+    setShowScanner(false);
+    if (match) {
+      setSelectedEq(match);
+      toast({ title: '✓ Équipement trouvé', description: match.name });
+    } else {
+      toast({ title: 'Aucune correspondance', description: `Code: ${cleaned}`, variant: 'destructive' });
+    }
+  }, [equipments, toast]);
 
   if (loading) {
     return (
@@ -579,33 +589,12 @@ const Equipements = () => {
       </AnimatePresence>
 
       {/* QR Scanner Modal */}
-      <AnimatePresence>
-        {showScanner && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={stopScanner}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }} className="glass-card-strong w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-foreground flex items-center gap-2"><Camera className="h-5 w-5 text-primary" /> Scanner QR Code</h2>
-                <button onClick={stopScanner} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
-              </div>
-              <div className="relative rounded-xl overflow-hidden bg-black aspect-square mb-4">
-                <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
-                <canvas ref={canvasRef} className="hidden" />
-                <div className="absolute inset-0 border-2 border-primary/50 rounded-xl pointer-events-none" />
-                <div className="absolute top-1/2 left-1/4 right-1/4 h-0.5 bg-primary/60 animate-pulse" style={{ boxShadow: '0 0 12px hsl(var(--primary))' }} />
-              </div>
-              {scanResult ? (
-                <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-xs text-muted-foreground mb-1">Résultat :</p>
-                  <p className="text-sm font-mono text-foreground">{scanResult}</p>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center">Pointez la caméra vers un QR code d'équipement</p>
-              )}
-              <p className="text-[10px] text-muted-foreground text-center mt-3">💡 Scannez le QR code imprimé sur la plaque de l'équipement pour accéder à sa fiche technique.</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <QrScannerModal
+        open={showScanner}
+        onClose={stopScanner}
+        onScan={handleQrDecoded}
+        title={t('equipment.scan_qr')}
+      />
 
       {/* Delete Confirmation */}
       <AnimatePresence>

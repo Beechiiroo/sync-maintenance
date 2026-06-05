@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarClock, CheckCircle2, Clock, AlertCircle, Plus, X, Zap, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Clock, AlertCircle, Plus, X, Zap, ChevronLeft, ChevronRight, Loader2, FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { logAudit } from '@/lib/audit';
+import { generateMaintenancePDF } from '@/lib/pdfReport';
 
 interface Schedule {
   id: string;
@@ -43,8 +44,41 @@ const Maintenance = () => {
   const [equipmentList, setEquipmentList] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [form, setForm] = useState({ equipment_id: '', task: '', frequency: 'Mensuel', nextDate: '' });
+  const today = new Date();
+  const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
+  const monthAhead = new Date(); monthAhead.setMonth(monthAhead.getMonth() + 1);
+  const [exportPeriod, setExportPeriod] = useState({
+    from: monthAgo.toISOString().slice(0, 10),
+    to: monthAhead.toISOString().slice(0, 10),
+  });
+
+  const handleExportPDF = () => {
+    const from = new Date(exportPeriod.from);
+    const to = new Date(exportPeriod.to);
+    const filtered = schedules.filter(s => {
+      const d = new Date(s.next_due);
+      return d >= from && d <= to;
+    });
+    generateMaintenancePDF({
+      title: 'Rapport de maintenance préventive',
+      subtitle: 'Planifications et exécution',
+      period: { from, to },
+      rows: filtered.map(s => ({
+        equipment: s.equipment_name,
+        task: s.task,
+        frequency: s.frequency,
+        next_due: new Date(s.next_due).toLocaleDateString('fr-FR'),
+        status: s.status,
+        last_performed: s.last_performed,
+      })),
+    });
+    logAudit('Maintenance', 'export', `Export PDF (${filtered.length} lignes) ${exportPeriod.from}→${exportPeriod.to}`);
+    setShowExport(false);
+    toast({ title: '✅ Rapport généré', description: `${filtered.length} planification(s) exportée(s)` });
+  };
 
   const fetchData = async () => {
     try {
@@ -175,11 +209,42 @@ const Maintenance = () => {
               </button>
             ))}
           </div>
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowExport(true)} className="px-3 py-2.5 rounded-lg bg-muted text-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/80 transition-colors">
+            <FileDown className="h-4 w-4" /> Export PDF
+          </motion.button>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowModal(true)} className="px-4 py-2.5 rounded-lg gradient-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 flex items-center gap-2">
             <Plus className="h-4 w-4" /> Planifier
           </motion.button>
         </div>
       </motion.div>
+
+      {/* Export PDF Modal */}
+      <AnimatePresence>
+        {showExport && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowExport(false)}>
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-card border border-border rounded-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-foreground flex items-center gap-2"><FileDown className="h-5 w-5 text-primary" /> Rapport PDF — sélection période</h2>
+                <button onClick={() => setShowExport(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Du</label>
+                  <input type="date" value={exportPeriod.from} onChange={e => setExportPeriod(p => ({ ...p, from: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Au</label>
+                  <input type="date" value={exportPeriod.to} onChange={e => setExportPeriod(p => ({ ...p, to: e.target.value }))} className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm" />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setShowExport(false)} className="flex-1 h-10 rounded-lg bg-muted text-muted-foreground text-sm font-medium">Annuler</button>
+                <button onClick={handleExportPDF} className="flex-1 h-10 rounded-lg gradient-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2"><FileDown className="h-4 w-4" /> Télécharger</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
