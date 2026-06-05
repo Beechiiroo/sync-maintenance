@@ -98,11 +98,11 @@ const SmartNotifications = () => {
             const msg = `« ${n.title} » → ${n.status}`;
             toast(title, { description: msg });
             // Persist for current user feed
-            await supabase.from('notifications').insert({
+            await supabase.from('notifications').insert([{
               user_id: user.id,
-              type: n.status === 'completed' ? 'success' : n.status === 'cancelled' ? 'warning' : 'info',
+              type: (n.status === 'completed' ? 'info' : n.status === 'cancelled' ? 'warning' : 'info') as any,
               title, message: msg, link: '/interventions',
-            });
+            }]);
           })
         .subscribe();
     })();
