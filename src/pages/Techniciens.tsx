@@ -30,6 +30,22 @@ const FALLBACK_PHOTOS = [
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face',
 ];
 
+// Anciens techniciens (démo, photos réelles) — affichés en tête de liste en plus des comptes Supabase
+const LEGACY_TECHS: Technician[] = [
+  { id: 'legacy-1', name: 'Karim Bensaïd', email: 'karim.bensaid@syncmaintenance.com', role: 'technician', tasks: 18, completed: 16, rating: 4.8, avatar: 'KB', status: 'en_intervention',
+    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face' },
+  { id: 'legacy-2', name: 'Mohamed Ait-Ali', email: 'mohamed.aa@syncmaintenance.com', role: 'technician', tasks: 22, completed: 21, rating: 4.9, avatar: 'MA', status: 'disponible',
+    photoUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop&crop=face' },
+  { id: 'legacy-3', name: 'Sarah Hamdi', email: 'sarah.h@syncmaintenance.com', role: 'technician', tasks: 14, completed: 13, rating: 4.7, avatar: 'SH', status: 'disponible',
+    photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face' },
+  { id: 'legacy-4', name: 'Amine Mokhtar', email: 'amine.m@syncmaintenance.com', role: 'admin', tasks: 9, completed: 9, rating: 5.0, avatar: 'AM', status: 'en_intervention',
+    photoUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face' },
+  { id: 'legacy-5', name: 'Yasmine Belkacem', email: 'yasmine.b@syncmaintenance.com', role: 'assistant', tasks: 11, completed: 10, rating: 4.6, avatar: 'YB', status: 'conge',
+    photoUrl: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&h=400&fit=crop&crop=face' },
+  { id: 'legacy-6', name: 'Rachid Ouali', email: 'rachid.o@syncmaintenance.com', role: 'technician', tasks: 17, completed: 15, rating: 4.5, avatar: 'RO', status: 'disponible',
+    photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face' },
+];
+
 const statusConfig: Record<TechStatus, { label: string; color: string; bg: string; dot: string }> = {
   disponible: { label: 'Disponible', color: 'text-success', bg: 'bg-success/10', dot: 'bg-success' },
   en_intervention: { label: 'En intervention', color: 'text-warning', bg: 'bg-warning/10', dot: 'bg-warning' },
@@ -90,7 +106,8 @@ const Techniciens = () => {
           photoUrl: p.avatar_url || FALLBACK_PHOTOS[i % FALLBACK_PHOTOS.length],
         };
       });
-      setTechnicians(techs);
+      // Préfixe avec les anciens techniciens (démo) pour conserver l'affichage historique
+      setTechnicians([...LEGACY_TECHS, ...techs]);
       setLoading(false);
     };
     fetchTechs();
