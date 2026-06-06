@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, Factory, Activity, Box, BarChart3, Award, Leaf, Gamepad2, Bot,
   Sparkles, UserCircle2, Siren, Clock, Eye, Crown, Search, BookOpen, Shield, FileText,
   Recycle, Building2, GitBranch, Zap, ShoppingCart, HardHat, Map, GraduationCap, FlaskConical,
-  FileBarChart, Handshake, Timer, Wallet, Target, QrCode, Camera, Gauge, ScrollText, UserCog
+  FileBarChart, Handshake, Timer, Wallet, Target, QrCode, Camera, Gauge, ScrollText, UserCog, Ticket, MessageSquare
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar } from '@/store/slices/themeSlice';
@@ -26,6 +26,8 @@ const AppSidebar = () => {
     { to: '/predictive', icon: Activity, label: t('nav.predictive') },
     { to: '/techniciens', icon: Users, label: t('nav.techniciens') },
     { to: '/stock', icon: Package, label: t('nav.stock'), badge: 2 },
+    { to: '/tickets', icon: Ticket, label: t('nav.tickets') },
+    { to: '/messages', icon: MessageSquare, label: t('nav.messages') },
   ];
 
   const navAnalytics = [
